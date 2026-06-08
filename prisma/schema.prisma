@@ -74,7 +74,6 @@ model Rooms {
   slug         String    @unique
   // Tempo padrão em minutos
   standardTime Int       @default(180) @map("standard_time")
-  // Tempo restante em minutos
   description  String?
   inactive     DateTime?
   createdAt    DateTime  @default(now()) @map("created_at")

@@ -272,10 +272,4 @@ Arquivos enviados para impressão, associados a um computador e a um advogado.
 6. **Cascades** concentrados em registros dependentes/filhos (tokens, junção, impressões).
 7. **Uso exclusivo de máquina**: `Computers.currentLawyerId @unique` impede um advogado de ocupar dois computadores ao mesmo tempo (ver nota na tabela `Computers`).
 
-## ⚠️ Pontos de Atenção (dívidas/observações de modelagem)
 
-- ✅ ~~`Computers.currentLawyerId` não é FK~~ → **corrigido**: agora é FK para `Lawyers` (`onDelete: SetNull`).
-- ✅ ~~`Computers.mac_code` quebra a convenção camelCase~~ → **corrigido**: renomeado para `macCode @map("mac_code")`.
-- `Lawyers.birth` é `String` em vez de `DateTime` (mantido por decisão do projeto).
-- `datasource db` não define `url` no schema (vem de env/`prisma.config.ts`).
-- Comentário órfão (`// Tempo restante em minutos`) acima de `description` em `Rooms` — provável resquício.
