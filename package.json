@@ -1,0 +1,37 @@
+{
+  "name": "api-fr",
+  "version": "1.0.0",
+  "description": "API-FR é uma API desenvolvida para o projeto SalaLivre. Uma plataforma integrada de gestão de espaços tecnológicos voltada para os escritórios compartilhados e salas de fórum da OAB Maranhão.",
+  "main": "src/http/server.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/http/server.ts",
+    "postinstall": "prisma generate"
+  },
+  "keywords": [],
+  "author": {
+    "name": "Hilquias Ferreira Melo",
+    "email": "hfmelodev@gmail.com",
+    "url": "https://github.com/hfmelodev"
+  },
+  "license": "ISC",
+  "packageManager": "pnpm@10.26.2",
+  "devDependencies": {
+    "@biomejs/biome": "2.4.16",
+    "@types/node": "^25.9.2",
+    "@types/pg": "^8.20.0",
+    "prisma": "^7.8.0",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.8.5",
+    "fastify-type-provider-zod": "^6.1.0",
+    "pg": "^8.21.0",
+    "zod": "^4.4.3"
+  }
+}

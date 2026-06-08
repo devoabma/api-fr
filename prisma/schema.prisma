@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Roles {
+  ADMIN
+  MEMBER
+}
+
+enum TokenTypes {
+  PASSWORD_RECOVER
+}
+
+model Tokens {
+  id        String     @id @default(cuid())
+  type      TokenTypes
+  code      String     @unique @db.VarChar(6)
+  createdAt DateTime   @default(now()) @map("created_at")
+  expiresAt DateTime?  @map("expires_at")
+
+  employee   Employees @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String    @map("employee_id")
+
+  @@map("tokens")
+}
+
+model Employees {
+  id            String    @id @default(cuid())
+  name          String
+  cpf           String    @unique
+  email         String    @unique
+  imageUrl      String?   @map("image_url")
+  imagePublicId String?   @map("image_public_id")
+  passwordHash  String    @map("password_hash")
+  role          Roles     @default(MEMBER)
+  inactive      DateTime?
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt() @map("updated_at")
+
+  tokens         Tokens[]
+  employeesRooms EmployeesRooms[]
+
+  @@map("employees")
+}
+
+model EmployeesRooms {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // (onDelete: Cascade) — quando um funcionário ou sala for deletado, os registros intermediários são removidos automaticamente.
+  employees  Employees @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId String    @map("employee_id")
+  rooms      Rooms     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  roomId     String    @map("room_id")
+
+  // Evitar duplicidade, um mesmo funcionário não pode ser vinculado à mesma sala duas vezes.
+  @@unique([employeeId, roomId])
+  @@map("employees_rooms")
+}
+
+model Rooms {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+  // Tempo padrão em minutos
+  standardTime Int       @default(180) @map("standard_time")
+  // Tempo restante em minutos
+  description  String?
+  inactive     DateTime?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt() @map("updated_at")
+
+  employeesRooms EmployeesRooms[]
+  computers      Computers[]
+
+  @@map("rooms")
+}
+
+model Computers {
+  id          String    @id @default(cuid())
+  macCode     String    @unique @map("mac_code")
+  description String
+  number      Int
+  inUse       Boolean   @default(false) @map("in_use")
+  maintenance DateTime?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt() @map("updated_at")
+
+  room   Rooms  @relation(fields: [roomId], references: [id])
+  roomId String @map("room_id")
+
+  // Advogado que está usando o computador no momento (opcional).
+  // @unique: garante que o mesmo advogado não use dois computadores ao mesmo tempo.
+  // No Postgres, várias linhas com NULL são permitidas (máquinas livres), mas só um
+  // computador por advogado não-nulo. A lógica da aplicação deve limpar o campo (null) ao encerrar a sessão.
+  currentLawyer   Lawyers? @relation(fields: [currentLawyerId], references: [id], onDelete: SetNull)
+  currentLawyerId String?  @unique @map("current_lawyer_id")
+
+  computerSession ComputerSessions[]
+  printers        Printers[]
+
+  @@map("computers")
+}
+
+model ComputerSessions {
+  id        String    @id @default(cuid())
+  startedAt DateTime  @default(now()) @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+
+  computer   Computers @relation(fields: [computerId], references: [id])
+  computerId String    @map("computer_id")
+
+  lawyer   Lawyers @relation(fields: [lawyerId], references: [id])
+  lawyerId String  @map("lawyer_id")
+
+  @@map("computer_sessions")
+}
+
+model Lawyers {
+  id            String    @id @default(cuid())
+  name          String
+  cpf           String    @unique
+  oab           String    @unique
+  email         String    @unique
+  birth         String
+  category      String
+  remainingTime Int?      @map("remaining_time")
+  lastAccess    DateTime? @map("last_access")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt() @map("updated_at")
+
+  computerSessions ComputerSessions[]
+  printers         Printers[]
+  currentComputer  Computers?
+
+  @@map("lawyers")
+}
+
+model Printers {
+  id        String   @id @default(cuid())
+  fileUrl   String   @unique @map("file_url")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  computer   Computers @relation(fields: [computerId], references: [id], onDelete: Cascade)
+  computerId String    @map("computer_id")
+  lawyer     Lawyers   @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId   String    @map("lawyer_id")
+
+  @@map("printers")
+}

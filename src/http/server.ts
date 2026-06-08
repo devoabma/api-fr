@@ -1,0 +1,13 @@
+import { env } from '../env'
+import { app } from './app'
+
+app
+  .listen({
+    port: env.API_PORT,
+    host: '0.0.0.0',
+  })
+  .then(() => {
+    console.log(`
+    🚀 \x1b[32m> Servidor iniciado com sucesso!
+    📡 \x1b[33m> Aguardando conexões na porta ${env.API_PORT}`)
+  })
