@@ -1,5 +1,5 @@
-import { env } from '../env'
 import { app } from './app'
+import { env } from './env'
 
 app
   .listen({
@@ -8,6 +8,6 @@ app
   })
   .then(() => {
     console.log(`
-    🚀 \x1b[32m> Servidor iniciado com sucesso!
+    🚀 \x1b[32m> Servidor iniciado com sucesso
     📡 \x1b[33m> Aguardando conexões na porta ${env.API_PORT}`)
   })

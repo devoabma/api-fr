@@ -10,6 +10,12 @@
       "ESNext.Iterator",
       "ESNext.Promise"
     ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
     "module": "ESNext",
     "target": "ES2023",
     "strict": true,
