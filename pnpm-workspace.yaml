@@ -2,3 +2,19 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - esbuild
   - prisma
+  - sharp
+
+# Pacotes liberados da política minimumReleaseAge (default do pnpm 11 que bloqueia
+# versões publicadas há poucas horas). Mantém a proteção de supply-chain para todo
+# o resto. Adicione aqui se outra dependência recém-publicada barrar o install.
+minimumReleaseAgeExclude:
+  - react-email
+  - '@react-email/ui'
+  - prettier
+  - baseline-browser-mapping
+
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  sharp: true

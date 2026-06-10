@@ -2,7 +2,10 @@ import { hash } from 'bcryptjs'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
+import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
+import { resend } from '@/lib/resend'
+import SendEmailEmployeeSignUpTemplate from '@/utils/emails/sendEmailEmployeeSignUpTemplate'
 import { cpfSchema } from '@/utils/validations/cpf'
 
 export async function createAccount(app: FastifyInstance) {
@@ -11,12 +14,12 @@ export async function createAccount(app: FastifyInstance) {
     {
       schema: {
         tags: ['employees'],
-        summary: 'Cria um novo funcionário',
+        summary: 'Cria um novo funcionário',
         body: z.object({
           name: z.string().trim().nonempty('Nome obrigatório'),
           cpf: cpfSchema,
           email: z.email('E-mail inválido').trim(),
-          password: z.string('Senha obrigatória').trim().min(8, 'Senha mínimo de 8 caracteres'),
+          password: z.string('Senha obrigatória').trim().min(8, 'Senha mínimo de 8 caracteres'),
         }),
         response: {
           201: z.object({
@@ -38,31 +41,56 @@ export async function createAccount(app: FastifyInstance) {
 
       if (employeeWithSameCpf) {
         return reply.status(400).send({
-          message: 'Já existe um funcionário cadastrado com o mesmo CPF.',
+          message: 'Já existe um funcionário cadastrado com o mesmo CPF.',
         })
       }
 
       if (employeeWithSameEmail) {
         return reply.status(400).send({
-          message: 'Já existe um funcionário cadastrado com o mesmo e-mail.',
+          message: 'Já existe um funcionário cadastrado com o mesmo e-mail.',
         })
       }
 
       const passwordHash = await hash(password, 8)
 
-      await prisma.employees.create({
-        data: {
-          name,
-          cpf,
-          email,
-          passwordHash,
-        },
-      })
+      try {
+        await prisma.$transaction(async transaction => {
+          await transaction.employees.create({
+            data: {
+              name,
+              cpf,
+              email,
+              passwordHash,
+            },
+          })
 
-      // TODO: Enviar e-mail de boas vindas via Resend
+          // Envia o e-mail dentro da transação: se o envio falhar, o cadastro do funcionário sofre rollback.
+          const { error } = await resend.emails.send({
+            from: '📧 Sala Livre <nao-responda@hit.dev.br>',
+            to: env.NODE_ENV === 'production' ? email : 'hilquiasfmelo@gmail.com',
+            subject: '🎉 Bem-vindo à equipe! Aqui estão suas informações.',
+            react: SendEmailEmployeeSignUpTemplate({
+              name,
+              cpf,
+              email,
+              tempPassword: password,
+              link: `${env.WEB_URL}/sign-in`,
+            }),
+          })
+
+          if (error) {
+            throw new Error(error.message)
+          }
+        })
+      } catch (err) {
+        console.error({ err })
+        return reply.status(400).send({
+          message: 'Não foi possível enviar o e-mail de boas-vindas. O funcionário não foi cadastrado, tente novamente.',
+        })
+      }
 
       return reply.status(201).send({
-        message: 'Funcionário criado com sucesso!',
+        message: 'Funcionário criado com sucesso!',
       })
     }
   )
