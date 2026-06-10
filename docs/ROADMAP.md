@@ -41,7 +41,7 @@
 - [ ] Desvincular funcionário de uma ou várias salas
 
 ### Regras de negócio (RN)
-- [ ] Somente ADMIN cadastra funcionários/salas/computadores
+- [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários protegido; salas/computadores pendentes)
 - [x] Não permitir e-mail nem CPF duplicado
 - [ ] Não trocar a senha se a nova for igual à antiga
 - [ ] Somente ADMIN lista todos os funcionários
