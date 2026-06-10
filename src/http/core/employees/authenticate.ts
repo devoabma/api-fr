@@ -2,6 +2,7 @@ import { compare } from 'bcryptjs'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
+import { UnauthorizedError } from '@/http/_errors/unauthorized'
 import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
 import { cpfSchema } from '@/utils/validations/cpf'
@@ -42,16 +43,13 @@ export async function authenticate(app: FastifyInstance) {
         },
       })
 
-      if (!employee)
-        return reply.status(400).send({ message: 'Credenciais inválidas. Verifique suas informações e tente novamente.' })
+      if (!employee) throw new UnauthorizedError('Credenciais inválidas. Verifique suas informações e tente novamente.')
 
-      if (employee.inactive)
-        return reply.status(400).send({ message: 'Funcionário inativo. Entre em contato com o administrador.' })
+      if (employee.inactive) throw new UnauthorizedError('Funcionário inativo. Entre em contato com o administrador.')
 
       const isValidPassword = await compare(password, employee.passwordHash)
 
-      if (!isValidPassword)
-        return reply.status(400).send({ message: 'Credenciais inválidas. Verifique suas informações e tente novamente.' })
+      if (!isValidPassword) throw new UnauthorizedError('Credenciais inválidas. Verifique suas informações e tente novamente.')
 
       const token = await reply.jwtSign(
         {

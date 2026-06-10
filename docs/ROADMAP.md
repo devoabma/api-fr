@@ -8,16 +8,16 @@
 
 ## 0. Infraestrutura / Fundação
 
-- [ ] Plugin Prisma Client (singleton com adapter-pg) acessível nas rotas
-- [ ] Tratamento global de erros (errorHandler) + classes de erro de domínio
-- [ ] Hash de senha (bcrypt/argon2) — RNF: senha criptografada
-- [ ] Autenticação JWT (`@fastify/jwt`) + middleware/decorator `request.getCurrentUserId()`
-- [ ] Middleware de autorização por papel (ADMIN vs MEMBER)
+- [x] Plugin Prisma Client (singleton com adapter-pg) acessível nas rotas
+- [x] Tratamento global de erros (errorHandler) + classes de erro de domínio
+- [x] Hash de senha (bcrypt/argon2) — RNF: senha criptografada
+- [x] Autenticação JWT (`@fastify/jwt`) + middleware/decorator `request.getIdCurrentEmployee()`
+- [x] Middleware de autorização por papel (ADMIN vs MEMBER) — `request.checkIfEmployeeIsAdmin()`
 - [ ] Paginação reutilizável (10 itens por página) — RNF
-- [ ] Envio de e-mail (confirmação de cadastro, reset de senha)
+- [~] Envio de e-mail (confirmação de cadastro feito; reset de senha pendente)
 - [ ] Upload de imagem de perfil (Cloudinary — `imageUrl` / `imagePublicId`)
 - [ ] Integração com API externa (Protheus) — validação de adimplência do advogado
-- [ ] Documentação Swagger/OpenAPI (`@fastify/swagger`)
+- [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
 - [ ] Seed do usuário ADMIN master
 
 ---
@@ -25,13 +25,13 @@
 ## 1. Funcionários (Employees)
 
 ### Casos de uso (RF)
-- [~] Criar funcionário (`create-account.ts` — stub existe, sem persistência)
-- [~] Autenticar (login) (`authenticate.ts`)
-- [ ] Obter perfil do usuário logado
+- [x] Criar funcionário (`create-account.ts`)
+- [x] Autenticar (login) (`authenticate.ts`)
+- [x] Obter perfil do usuário logado (`get-profile.ts` — `GET /employees/profile`)
 - [ ] Trocar de senha
 - [ ] Redefinir senha
 - [ ] Enviar e-mail para redefinir senha
-- [ ] Enviar e-mail ao funcionário quando o ADM o cadastrar
+- [x] Enviar e-mail ao funcionário quando o ADM o cadastrar
 - [ ] Listar todos os funcionários (paginado)
 - [ ] Inativar funcionário
 - [ ] Ativar funcionário
@@ -42,11 +42,11 @@
 
 ### Regras de negócio (RN)
 - [ ] Somente ADMIN cadastra funcionários/salas/computadores
-- [ ] Não permitir e-mail nem CPF duplicado
+- [x] Não permitir e-mail nem CPF duplicado
 - [ ] Não trocar a senha se a nova for igual à antiga
 - [ ] Somente ADMIN lista todos os funcionários
 - [ ] Somente ADMIN inativa/ativa/altera funcionário
-- [ ] Funcionário inativo não pode se autenticar
+- [x] Funcionário inativo não pode se autenticar
 - [ ] Não vincular funcionário a uma sala inativa
 
 ---

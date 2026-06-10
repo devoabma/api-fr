@@ -118,13 +118,13 @@ O sistema pode gerar relatórios:
 #### 👔 Funcionários (Employees)
 
 - [ ] Criar seed do usuário administrador master (permissão para criar funcionários e salas).
-- [ ] Cadastrar funcionários.
-- [ ] Autenticar.
-- [ ] Obter o perfil de um usuário logado.
+- [x] Cadastrar funcionários.
+- [x] Autenticar.
+- [x] Obter o perfil de um usuário logado.
 - [ ] Trocar de senha.
 - [ ] Redefinir a senha.
 - [ ] Enviar um e-mail para redefinir senha.
-- [ ] Enviar um e-mail ao funcionário quando o ADM o cadastrar.
+- [x] Enviar um e-mail ao funcionário quando o ADM o cadastrar.
 - [ ] Listar todos os funcionários cadastrados.
 - [ ] Inativar um funcionário.
 - [ ] Ativar um funcionário.
