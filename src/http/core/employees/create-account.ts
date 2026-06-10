@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
 import { resend } from '@/lib/resend'
-import SendEmailEmployeeSignUpTemplate from '@/utils/emails/sendEmailEmployeeSignUpTemplate'
+import SendEmailEmployeeSignUp from '@/utils/emails/sendEmailEmployeeSignUp'
 import { cpfSchema } from '@/utils/validations/cpf'
 
 export async function createAccount(app: FastifyInstance) {
@@ -69,7 +69,7 @@ export async function createAccount(app: FastifyInstance) {
             from: '📧 Sala Livre <nao-responda@hit.dev.br>',
             to: env.NODE_ENV === 'production' ? email : 'hilquiasfmelo@gmail.com',
             subject: '🎉 Bem-vindo à equipe! Aqui estão suas informações.',
-            react: SendEmailEmployeeSignUpTemplate({
+            react: SendEmailEmployeeSignUp({
               name,
               cpf,
               email,

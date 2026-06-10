@@ -26,7 +26,7 @@
 
 ### Casos de uso (RF)
 - [~] Criar funcionário (`create-account.ts` — stub existe, sem persistência)
-- [ ] Autenticar (login)
+- [~] Autenticar (login) (`authenticate.ts`)
 - [ ] Obter perfil do usuário logado
 - [ ] Trocar de senha
 - [ ] Redefinir senha

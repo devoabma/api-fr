@@ -10,7 +10,7 @@ type EmployeeSignUpEmailProps = {
   link: string
 }
 
-export default function SendEmailEmployeeSignUpTemplate({ name, cpf, email, tempPassword, link }: EmployeeSignUpEmailProps) {
+export default function SendEmailEmployeeSignUp({ name, cpf, email, tempPassword, link }: EmployeeSignUpEmailProps) {
   const currentYear = new Date().getFullYear()
   const sendDate = new Date().toLocaleDateString('pt-BR')
 
@@ -155,7 +155,7 @@ export default function SendEmailEmployeeSignUpTemplate({ name, cpf, email, temp
 }
 
 // Preview
-SendEmailEmployeeSignUpTemplate.PreviewProps = {
+SendEmailEmployeeSignUp.PreviewProps = {
   name: 'Maria Silva',
   cpf: '123.456.789-09',
   email: 'maria.silva@oabma.org.br',
