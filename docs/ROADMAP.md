@@ -14,7 +14,7 @@
 - [x] Autenticação JWT (`@fastify/jwt`) + middleware/decorator `request.getIdCurrentEmployee()`
 - [x] Middleware de autorização por papel (ADMIN vs MEMBER) — `request.checkIfEmployeeIsAdmin()`
 - [ ] Paginação reutilizável (10 itens por página) — RNF
-- [~] Envio de e-mail (confirmação de cadastro e solicitação de reset feitos; efetivação da troca pendente)
+- [x] Envio de e-mail (confirmação de cadastro, solicitação de reset e confirmação de troca de senha)
 - [ ] Upload de imagem de perfil (Cloudinary — `imageUrl` / `imagePublicId`)
 - [ ] Integração com API externa (Protheus) — validação de adimplência do advogado
 - [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
@@ -29,7 +29,7 @@
 - [x] Autenticar (login) (`authenticate.ts`)
 - [x] Obter perfil do usuário logado (`get-profile.ts` — `GET /employees/profile`)
 - [ ] Trocar de senha
-- [ ] Redefinir senha
+- [x] Redefinir senha (`reset-password.ts` — `POST /employees/reset-password`)
 - [x] Enviar e-mail para redefinir senha (`request-password-recovery.ts` — `POST /employees/password-recovery`)
 - [x] Enviar e-mail ao funcionário quando o ADM o cadastrar
 - [ ] Listar todos os funcionários (paginado)
@@ -43,7 +43,7 @@
 ### Regras de negócio (RN)
 - [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários protegido; salas/computadores pendentes)
 - [x] Não permitir e-mail nem CPF duplicado
-- [ ] Não trocar a senha se a nova for igual à antiga
+- [x] Não trocar a senha se a nova for igual à antiga
 - [ ] Somente ADMIN lista todos os funcionários
 - [ ] Somente ADMIN inativa/ativa/altera funcionário
 - [x] Funcionário inativo não pode se autenticar

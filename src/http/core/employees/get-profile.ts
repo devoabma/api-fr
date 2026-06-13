@@ -16,6 +16,7 @@ export async function getProfile(app: FastifyInstance) {
         schema: {
           tags: ['employees'],
           summary: 'Recupera o perfil do funcionário autenticado',
+          security: [{ bearerAuth: [] }],
           response: {
             200: z.object({
               employee: z.object({

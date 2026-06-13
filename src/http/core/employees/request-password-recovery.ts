@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
@@ -33,6 +34,8 @@ export async function requestPasswordRecover(app: FastifyInstance) {
     async (request, reply) => {
       const { cpf, email } = request.body
 
+      const expiresAt = dayjs().add(5, 'minutes').toDate()
+
       const employee = await prisma.employees.findUnique({
         where: {
           cpf,
@@ -48,38 +51,46 @@ export async function requestPasswordRecover(app: FastifyInstance) {
         throw new BadRequestError('Credenciais inválidas. Verifique suas informações e tente novamente.')
       }
 
-      await prisma.$transaction(async transaction => {
-        const token = await transaction.tokens.create({
+      const code = generateRecoveryCode()
+
+      const { error } = await resend.emails.send({
+        from: '📧 Sala Livre <salalivre@hit.dev.br>',
+        to: env.NODE_ENV === 'production' ? email : 'hilquiasfmelo@gmail.com',
+        subject: '🔄 Redefinição de Senha - Sala Livre',
+        react: ResetPasswordEmail({
+          name: employee.name,
+          code,
+          link: `${env.WEB_URL}/employees/reset-password?code=${code}`,
+        }),
+      })
+
+      if (error) {
+        console.error({ err: error, email }, 'Falha ao enviar e-mail de redefinição de senha.')
+
+        throw new BadRequestError('Falha ao enviar e-mail de redefinição de senha.')
+      }
+
+      await prisma.$transaction([
+        prisma.tokens.deleteMany({
+          where: {
+            employeeId: employee.id,
+            type: 'PASSWORD_RECOVER',
+          },
+        }),
+        prisma.tokens.create({
           data: {
             type: 'PASSWORD_RECOVER',
             employeeId: employee.id,
-            code: generateRecoveryCode(),
-            expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutos
+            code,
+            expiresAt, // expira 5 minutos após criado
           },
-        })
+        }),
+      ])
 
-        const { error } = await resend.emails.send({
-          from: '📧 Sala Livre <salalivre@hit.dev.br>',
-          to: env.NODE_ENV === 'production' ? email : 'hilquiasfmelo@gmail.com',
-          subject: '🔄 Redefinição de Senha - Sala Livre',
-          react: ResetPasswordEmail({
-            name: employee.name,
-            code: token.code,
-            link: `${env.WEB_URL}/employees/reset-password?code=${token.code}`,
-          }),
-        })
-
-        if (error) {
-          console.error({ err: error, email }, 'Falha ao enviar e-mail de redefinição de senha.')
-
-          throw new BadRequestError('Falha ao enviar e-mail de redefinição de senha.')
-        }
-
-        // Somente em ambiente de desenvolvimento mostra no console
-        if (env.NODE_ENV === 'dev') {
-          console.log('> ✅ Email de redefinição de senha enviado com sucesso.', token.code)
-        }
-      })
+      // Somente em ambiente de desenvolvimento mostra no console
+      if (env.NODE_ENV === 'dev') {
+        console.log('> ✅ Email de redefinição de senha enviado com sucesso.', code)
+      }
 
       return reply.status(200).send({
         message: 'Email de redefinição de senha enviado com sucesso.',
