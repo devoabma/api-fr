@@ -14,7 +14,7 @@
 - [x] Autenticação JWT (`@fastify/jwt`) + middleware/decorator `request.getIdCurrentEmployee()`
 - [x] Middleware de autorização por papel (ADMIN vs MEMBER) — `request.checkIfEmployeeIsAdmin()`
 - [ ] Paginação reutilizável (10 itens por página) — RNF
-- [~] Envio de e-mail (confirmação de cadastro feito; reset de senha pendente)
+- [~] Envio de e-mail (confirmação de cadastro e solicitação de reset feitos; efetivação da troca pendente)
 - [ ] Upload de imagem de perfil (Cloudinary — `imageUrl` / `imagePublicId`)
 - [ ] Integração com API externa (Protheus) — validação de adimplência do advogado
 - [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
@@ -30,7 +30,7 @@
 - [x] Obter perfil do usuário logado (`get-profile.ts` — `GET /employees/profile`)
 - [ ] Trocar de senha
 - [ ] Redefinir senha
-- [ ] Enviar e-mail para redefinir senha
+- [x] Enviar e-mail para redefinir senha (`request-password-recovery.ts` — `POST /employees/password-recovery`)
 - [x] Enviar e-mail ao funcionário quando o ADM o cadastrar
 - [ ] Listar todos os funcionários (paginado)
 - [ ] Inativar funcionário

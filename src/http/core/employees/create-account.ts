@@ -47,11 +47,11 @@ export async function createAccount(app: FastifyInstance) {
         ])
 
         if (employeeWithSameCpf) {
-          throw new BadRequestError('Já existe um funcionário cadastrado com o mesmo CPF.')
+          throw new BadRequestError('Já existe um funcionário cadastrado com esse CPF.')
         }
 
         if (employeeWithSameEmail) {
-          throw new BadRequestError('Já existe um funcionário cadastrado com o mesmo e-mail.')
+          throw new BadRequestError('Já existe um funcionário cadastrado com esse e-mail.')
         }
 
         const passwordHash = await hash(password, 8)
@@ -79,7 +79,7 @@ export async function createAccount(app: FastifyInstance) {
         })
 
         if (error) {
-          request.log.error({ err: error, email }, 'Falha ao enviar e-mail de boas-vindas.')
+          console.error({ err: error, email }, 'Falha ao enviar e-mail de boas-vindas.')
         }
 
         return reply.status(201).send({
