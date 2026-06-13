@@ -3,6 +3,7 @@
 - [x] 1.1 Importar o plugin `auth` em `create-account.ts`
 - [x] 1.2 Encadear `.register(auth)` após `.withTypeProvider()` e antes do `.post(...)`
 - [x] 1.3 Garantir que `await request.checkIfEmployeeIsAdmin()` seja a primeira etapa do handler
+- [x] 1.4 Declarar `security: [{ bearerAuth: [] }]` no schema da rota para refletir a proteção na doc OpenAPI
 
 ## 2. Verificação
 

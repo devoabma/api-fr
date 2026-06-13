@@ -5,6 +5,7 @@ O endpoint `POST /employees/create-account` já chamava `request.checkIfEmployee
 ## What Changes
 
 - **`create-account.ts`**: a rota passa a registrar o plugin `auth` (`.register(auth)`) na cadeia de construção, antes do `.post(...)`. Com isso, `request.checkIfEmployeeIsAdmin()` fica disponível e é executada como primeira etapa do handler.
+- **Documentação OpenAPI**: o schema da rota declara `security: [{ bearerAuth: [] }]`, sinalizando no Swagger/Scalar que o endpoint exige token Bearer (cadeado na doc e envio do `Authorization` no "Try it out"), alinhando-se ao padrão já adotado em `get-profile.ts`.
 - **Efeito de contrato HTTP**: requisições sem JWT ou com token inválido/expirado passam a responder `401`; funcionários autenticados sem papel `ADMIN` também respondem `401` (acesso negado). Apenas funcionários `ADMIN` autenticados conseguem criar contas.
 
 ## Capabilities

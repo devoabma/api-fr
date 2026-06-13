@@ -20,6 +20,7 @@ export async function createAccount(app: FastifyInstance) {
         schema: {
           tags: ['employees'],
           summary: 'Cria um novo funcionário',
+          security: [{ bearerAuth: [] }],
           body: z.object({
             name: z.string().trim().nonempty('Nome obrigatório'),
             cpf: cpfSchema,
