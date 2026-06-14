@@ -1,5 +1,5 @@
 import { hash } from 'bcryptjs'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
@@ -10,6 +10,26 @@ import { resend } from '@/lib/resend'
 import SendEmailEmployeeSignUp from '@/utils/emails/sendEmailEmployeeSignUp'
 import { cpfSchema } from '@/utils/validations/cpf'
 
+const createAccountSchema = {
+  tags: ['employees'],
+  summary: 'Cria um novo funcionário',
+  security: [{ bearerAuth: [] }],
+  body: z.object({
+    name: z.string().trim().nonempty('Nome obrigatório'),
+    cpf: cpfSchema,
+    email: z.email('E-mail inválido').trim(),
+    password: z.string('Senha obrigatória').trim().min(8, 'Senha mínimo de 8 caracteres'),
+  }),
+  response: {
+    201: z.object({
+      message: z.string(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+  },
+} satisfies FastifySchema
+
 export async function createAccount(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
@@ -17,25 +37,7 @@ export async function createAccount(app: FastifyInstance) {
     .post(
       '/create-account',
       {
-        schema: {
-          tags: ['employees'],
-          summary: 'Cria um novo funcionário',
-          security: [{ bearerAuth: [] }],
-          body: z.object({
-            name: z.string().trim().nonempty('Nome obrigatório'),
-            cpf: cpfSchema,
-            email: z.email('E-mail inválido').trim(),
-            password: z.string('Senha obrigatória').trim().min(8, 'Senha mínimo de 8 caracteres'),
-          }),
-          response: {
-            201: z.object({
-              message: z.string(),
-            }),
-            400: z.object({
-              message: z.string(),
-            }),
-          },
-        },
+        schema: createAccountSchema,
       },
       async (request, reply) => {
         await request.checkIfEmployeeIsAdmin()

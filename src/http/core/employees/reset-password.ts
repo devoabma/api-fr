@@ -1,6 +1,6 @@
 import { compare, hash } from 'bcryptjs'
 import dayjs from 'dayjs'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
@@ -9,32 +9,34 @@ import { prisma } from '@/lib/prisma'
 import { resend } from '@/lib/resend'
 import SendConfirmationChangedPassword from '@/utils/emails/sendConfirmationChangedPassword'
 
+const resetPasswordSchema = {
+  tags: ['employees'],
+  summary: 'Redefine a senha',
+  body: z
+    .object({
+      code: z.string('Código de redefinição obrigatório').trim(),
+      password: z.string('Senha obrigatória').trim().min(8, 'Senha mínima de 8 caracteres'),
+      confirmPassword: z.string('Confirmação de senha obrigatória').trim().min(8, 'Senha mínima de 8 caracteres'),
+    })
+    .refine(data => data.password === data.confirmPassword, {
+      message: 'As senhas devem ser iguais.',
+      path: ['confirmPassword'],
+    }),
+  response: {
+    200: z.object({
+      message: z.string(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+  },
+} satisfies FastifySchema
+
 export async function resetPassword(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().post(
     '/reset-password',
     {
-      schema: {
-        tags: ['employees'],
-        summary: 'Redefine a senha',
-        body: z
-          .object({
-            code: z.string('Código de redefinição obrigatório').trim(),
-            password: z.string('Senha obrigatória').trim().min(8, 'Senha mínima de 8 caracteres'),
-            confirmPassword: z.string('Confirmação de senha obrigatória').trim().min(8, 'Senha mínima de 8 caracteres'),
-          })
-          .refine(data => data.password === data.confirmPassword, {
-            message: 'As senhas devem ser iguais.',
-            path: ['confirmPassword'],
-          }),
-        response: {
-          200: z.object({
-            message: z.string(),
-          }),
-          400: z.object({
-            message: z.string(),
-          }),
-        },
-      },
+      schema: resetPasswordSchema,
     },
     async (request, reply) => {
       const { code, password } = request.body

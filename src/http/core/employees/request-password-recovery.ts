@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
@@ -10,26 +10,28 @@ import { generateRecoveryCode } from '@/utils'
 import ResetPasswordEmail from '@/utils/emails/resetPasswordEmail'
 import { cpfSchema } from '@/utils/validations/cpf'
 
-export async function requestPasswordRecover(app: FastifyInstance) {
+const requestPasswordRecoverySchema = {
+  tags: ['employees'],
+  summary: 'Requisita uma redefinição de senha',
+  body: z.object({
+    cpf: cpfSchema,
+    email: z.email('E-mail inválido').trim(),
+  }),
+  response: {
+    200: z.object({
+      message: z.string(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+  },
+} satisfies FastifySchema
+
+export async function requestPasswordRecovery(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().post(
     '/password-recovery',
     {
-      schema: {
-        tags: ['employees'],
-        summary: 'Requisita uma redefinição de senha',
-        body: z.object({
-          cpf: cpfSchema,
-          email: z.email('E-mail inválido').trim(),
-        }),
-        response: {
-          200: z.object({
-            message: z.string(),
-          }),
-          400: z.object({
-            message: z.string(),
-          }),
-        },
-      },
+      schema: requestPasswordRecoverySchema,
     },
     async (request, reply) => {
       const { cpf, email } = request.body

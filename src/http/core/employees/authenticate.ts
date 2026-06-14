@@ -1,5 +1,5 @@
 import { compare } from 'bcryptjs'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { UnauthorizedError } from '@/http/_errors/unauthorized'
@@ -7,26 +7,28 @@ import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
 import { cpfSchema } from '@/utils/validations/cpf'
 
+const authenticateSchema = {
+  tags: ['employees'],
+  summary: 'Autentica um funcionário',
+  body: z.object({
+    cpf: cpfSchema,
+    password: z.string('Senha obrigatória').trim().min(8, 'Senha mínima de 8 caracteres'),
+  }),
+  response: {
+    200: z.object({
+      token: z.string(),
+    }),
+    400: z.object({
+      message: z.string(),
+    }),
+  },
+} satisfies FastifySchema
+
 export async function authenticate(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().post(
     '/session/auth',
     {
-      schema: {
-        tags: ['employees'],
-        summary: 'Autentica um funcionário',
-        body: z.object({
-          cpf: cpfSchema,
-          password: z.string('Senha obrigatória').trim().min(8, 'Senha mínima de 8 caracteres'),
-        }),
-        response: {
-          200: z.object({
-            token: z.string(),
-          }),
-          400: z.object({
-            message: z.string(),
-          }),
-        },
-      },
+      schema: authenticateSchema,
     },
     async (request, reply) => {
       const { cpf, password } = request.body
@@ -43,13 +45,19 @@ export async function authenticate(app: FastifyInstance) {
         },
       })
 
-      if (!employee) throw new UnauthorizedError('Credenciais inválidas. Verifique suas informações e tente novamente.')
+      if (!employee) {
+        throw new UnauthorizedError('Credenciais inválidas. Verifique suas informações e tente novamente.')
+      }
 
-      if (employee.inactive) throw new UnauthorizedError('Funcionário inativo. Entre em contato com o administrador.')
+      if (employee.inactive) {
+        throw new UnauthorizedError('Funcionário inativo. Entre em contato com o administrador.')
+      }
 
       const isValidPassword = await compare(password, employee.passwordHash)
 
-      if (!isValidPassword) throw new UnauthorizedError('Credenciais inválidas. Verifique suas informações e tente novamente.')
+      if (!isValidPassword) {
+        throw new UnauthorizedError('Credenciais inválidas. Verifique suas informações e tente novamente.')
+      }
 
       const token = await reply.jwtSign(
         {

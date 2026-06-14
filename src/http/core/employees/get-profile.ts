@@ -1,10 +1,28 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import z from 'zod'
 import { NotFoundError } from '@/http/_errors/not-found'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 import { cpfSchema } from '@/utils/validations/cpf'
+
+const getProfileSchema = {
+  tags: ['employees'],
+  summary: 'Recupera o perfil do funcionário autenticado',
+  security: [{ bearerAuth: [] }],
+  response: {
+    200: z.object({
+      employee: z.object({
+        id: z.cuid2(),
+        name: z.string(),
+        cpf: cpfSchema,
+        email: z.email(),
+        imageUrl: z.string().nullable(),
+        role: z.enum(['MEMBER', 'ADMIN']),
+      }),
+    }),
+  },
+} satisfies FastifySchema
 
 export async function getProfile(app: FastifyInstance) {
   app
@@ -13,23 +31,7 @@ export async function getProfile(app: FastifyInstance) {
     .get(
       '/profile',
       {
-        schema: {
-          tags: ['employees'],
-          summary: 'Recupera o perfil do funcionário autenticado',
-          security: [{ bearerAuth: [] }],
-          response: {
-            200: z.object({
-              employee: z.object({
-                id: z.cuid2(),
-                name: z.string(),
-                cpf: cpfSchema,
-                email: z.email(),
-                imageUrl: z.string().nullable(),
-                role: z.enum(['MEMBER', 'ADMIN']),
-              }),
-            }),
-          },
-        },
+        schema: getProfileSchema,
       },
       async (request, reply) => {
         const employeeId = await request.getIdCurrentEmployee()
