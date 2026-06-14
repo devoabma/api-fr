@@ -32,9 +32,9 @@
 - [x] Redefinir senha (`reset-password.ts` — `POST /employees/reset-password`)
 - [x] Enviar e-mail para redefinir senha (`request-password-recovery.ts` — `POST /employees/password-recovery`)
 - [x] Enviar e-mail ao funcionário quando o ADM o cadastrar
-- [ ] Listar todos os funcionários (paginado)
-- [ ] Inativar funcionário
-- [ ] Ativar funcionário
+- [~] Listar todos os funcionários (`get-all.ts` — `GET /employees/get-all`; paginação ainda pendente)
+- [x] Inativar funcionário (`deactivate.ts` — `PATCH /employees/deactivate/:id`)
+- [x] Ativar funcionário (`activate.ts` — `PATCH /employees/activate/:id`)
 - [ ] Alterar funcionário
 - [ ] Trocar foto de perfil do funcionário logado
 - [ ] Vincular funcionário a uma ou várias salas
@@ -44,8 +44,8 @@
 - [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários protegido; salas/computadores pendentes)
 - [x] Não permitir e-mail nem CPF duplicado
 - [x] Não trocar a senha se a nova for igual à antiga
-- [ ] Somente ADMIN lista todos os funcionários
-- [ ] Somente ADMIN inativa/ativa/altera funcionário
+- [x] Somente ADMIN lista todos os funcionários
+- [~] Somente ADMIN inativa/ativa/altera funcionário (inativar/ativar protegidos; alterar pendente)
 - [x] Funcionário inativo não pode se autenticar
 - [ ] Não vincular funcionário a uma sala inativa
 
