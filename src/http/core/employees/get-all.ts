@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import z from 'zod'
-import { NotFoundError } from '@/http/_errors/not-found'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 import { cpfSchema } from '@/utils/validations/cpf'
@@ -48,10 +47,6 @@ export async function getAllEmployees(app: FastifyInstance) {
             inactive: true,
           },
         })
-
-        if (!employees) {
-          throw new NotFoundError('Nenhum funcionário cadastrado.')
-        }
 
         return reply.status(200).send({ employees })
       }
