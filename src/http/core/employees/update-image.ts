@@ -76,12 +76,13 @@ export async function updateEmployeeImage(app: FastifyInstance) {
           throw new BadRequestError('Erro ao atualizar a imagem do funcionário.')
         }
 
-        // Se já existia uma imagem anterior, remove do bucket (não-fatal: arquivo órfão é tolerável)
+        // Se já existia uma imagem anterior, remove do bucket
         if (employee.imagePublicId) {
           const { error: removeError } = await supabase.storage.from('profiles').remove([employee.imagePublicId])
 
           if (removeError) {
-            console.error('Falha ao remover a imagem antiga do bucket:', removeError)
+            console.log({ removeError })
+            throw new BadRequestError('Erro ao atualizar a imagem do funcionário.')
           }
         }
 

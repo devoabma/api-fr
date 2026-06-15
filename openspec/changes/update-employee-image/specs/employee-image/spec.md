@@ -2,7 +2,7 @@
 
 ### Requirement: Upload da foto de perfil do funcionário autenticado
 
-A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticado enviar a própria foto de perfil. A rota MUST registrar o plugin `auth` e resolver o alvo via `request.getIdCurrentEmployee()`. O corpo MUST ser `multipart/form-data` contendo um único arquivo, cujo tipo MUST estar na allowlist (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`) e cujo tamanho MUST respeitar o limite de 5MB. O arquivo MUST ser armazenado no bucket `profiles` do Supabase Storage em `uploads/<uuid>.<ext>`, e a URL pública e o caminho do arquivo MUST ser gravados em `imageUrl` e `imagePublicId` do funcionário. Quando o funcionário já possui `imagePublicId`, a imagem anterior MUST ser removida do bucket após o upload da nova (operação não-fatal).
+A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticado enviar a própria foto de perfil. A rota MUST registrar o plugin `auth` e resolver o alvo via `request.getIdCurrentEmployee()`. O corpo MUST ser `multipart/form-data` contendo um único arquivo, cujo tipo MUST estar na allowlist (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`) e cujo tamanho MUST respeitar o limite de 5MB. O arquivo MUST ser armazenado no bucket `profiles` do Supabase Storage em `uploads/<uuid>.<ext>`, e a URL pública e o caminho do arquivo MUST ser gravados em `imageUrl` e `imagePublicId` do funcionário. Quando o funcionário já possui `imagePublicId`, a imagem anterior MUST ser removida do bucket após o upload da nova; uma falha nessa remoção MUST resultar em `400`.
 
 #### Scenario: Funcionário troca a própria foto com sucesso
 
@@ -16,7 +16,7 @@ A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticad
 - **WHEN** o funcionário já possuía uma imagem (`imagePublicId` presente) e envia uma nova
 - **THEN** a nova imagem é enviada ao bucket
 - **AND** o arquivo anterior é removido do bucket
-- **AND** uma falha nessa remoção não impede a atualização do cadastro
+- **AND** uma falha nessa remoção faz a API responder `400` e o cadastro não é atualizado
 
 #### Scenario: Nenhum arquivo enviado
 

@@ -12,7 +12,7 @@
 - [x] 2.3 Validar presença do arquivo (`400`) e tipo via allowlist (`400`)
 - [x] 2.4 `404` quando o funcionário não existe
 - [x] 2.5 Upload para `profiles/uploads/<uuid>.<ext>` com `contentType: file.mimetype`
-- [x] 2.6 Remover a imagem antiga do bucket quando há `imagePublicId` (não-fatal)
+- [x] 2.6 Remover a imagem antiga do bucket quando há `imagePublicId` (falha → `400`)
 - [x] 2.7 Gravar `imageUrl` + `imagePublicId` e responder `200` com `{ imageUrl }`
 - [x] 2.8 Declarar `security` e schemas de resposta `200`/`400`/`404`/`413`
 

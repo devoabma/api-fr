@@ -15,7 +15,7 @@
 - [x] Middleware de autorização por papel (ADMIN vs MEMBER) — `request.checkIfEmployeeIsAdmin()`
 - [ ] Paginação reutilizável (10 itens por página) — RNF
 - [x] Envio de e-mail (confirmação de cadastro, solicitação de reset e confirmação de troca de senha)
-- [ ] Upload de imagem de perfil (Cloudinary — `imageUrl` / `imagePublicId`)
+- [x] Upload de imagem de perfil (Supabase Storage — `imageUrl` / `imagePublicId`)
 - [ ] Integração com API externa (Protheus) — validação de adimplência do advogado
 - [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
 - [ ] Seed do usuário ADMIN master
