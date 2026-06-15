@@ -26,4 +26,4 @@
 
 - [x] 4.1 Bucket `profiles` criado como PUBLIC
 - [x] 4.2 Remover as policies de RLS do bucket (desnecessárias com `service_role`)
-- [ ] 4.3 Validar manualmente upload, substituição da imagem antiga e os fluxos `400`/`404`/`413`/`401`
+- [x] 4.3 Validar manualmente upload, substituição da imagem antiga e os fluxos `400`/`404`/`413`/`401`
