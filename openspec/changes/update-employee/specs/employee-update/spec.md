@@ -2,11 +2,11 @@
 
 ### Requirement: Edição de funcionário por ADMIN
 
-A API SHALL expor `PUT /employees/update/:id` para editar os dados cadastrais de um funcionário. A rota MUST registrar o plugin `auth` e executar `request.checkIfEmployeeIsAdmin()` como primeira etapa do handler. O body SHALL aceitar os campos opcionais `name`, `email` e `role` (`MEMBER` | `ADMIN`); apenas os campos informados MUST ser gravados. A operação MUST ser interrompida quando o funcionário não existe (`404`) e quando o `email` informado já pertence a outro funcionário (`400`).
+A API SHALL expor `PATCH /employees/update/:id` para editar os dados cadastrais de um funcionário. A rota MUST registrar o plugin `auth` e executar `request.checkIfEmployeeIsAdmin()` como primeira etapa do handler. O body SHALL aceitar os campos opcionais `name`, `email` e `role` (`MEMBER` | `ADMIN`); apenas os campos informados MUST ser gravados. A operação MUST ser interrompida quando o funcionário não existe (`404`) e quando o `email` informado já pertence a outro funcionário (`400`).
 
 #### Scenario: ADMIN edita um funcionário existente
 
-- **WHEN** um ADMIN chama `PUT /employees/update/:id` com um ou mais campos válidos
+- **WHEN** um ADMIN chama `PATCH /employees/update/:id` com um ou mais campos válidos
 - **THEN** apenas os campos informados são atualizados
 - **AND** a API responde `200` com mensagem de sucesso
 

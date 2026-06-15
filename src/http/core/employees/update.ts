@@ -35,7 +35,7 @@ export async function updateEmployee(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
-    .put(
+    .patch(
       '/update/:id',
       {
         schema: updateEmployeeSchema,

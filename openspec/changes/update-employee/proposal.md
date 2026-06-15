@@ -4,7 +4,7 @@ O roadmap (seção 1) lista "Alterar funcionário" como pendente. Depois de [`li
 
 ## What Changes
 
-- **Novo caso de uso `update.ts`** (`PUT /employees/update/:id`): rota protegida que atualiza os campos `name`, `email` e `role` de um funcionário. Todos os campos do body são opcionais — apenas os informados são gravados (atualização parcial). Exige ADMIN via `checkIfEmployeeIsAdmin()`.
+- **Novo caso de uso `update.ts`** (`PATCH /employees/update/:id`): rota protegida que atualiza os campos `name`, `email` e `role` de um funcionário. Todos os campos do body são opcionais — apenas os informados são gravados (atualização parcial). Exige ADMIN via `checkIfEmployeeIsAdmin()`.
 - **`routes/index.ts`**: registra a nova rota sob o prefixo `/employees`.
 - A rota declara `security: [{ bearerAuth: [] }]` na doc OpenAPI e executa `checkIfEmployeeIsAdmin()` como primeira etapa do handler.
 
@@ -16,7 +16,7 @@ O roadmap (seção 1) lista "Alterar funcionário" como pendente. Depois de [`li
 ## Impact
 
 - Código novo: `src/http/core/employees/update.ts`; alteração de registro em `src/http/routes/index.ts`.
-- Contrato HTTP: novo endpoint `PUT /employees/update/:id`, exigindo JWT de um `ADMIN`; chamadas anônimas ou de não-admins recebem `401`.
+- Contrato HTTP: novo endpoint `PATCH /employees/update/:id`, exigindo JWT de um `ADMIN`; chamadas anônimas ou de não-admins recebem `401`.
 - Negócio: funcionário inexistente → `404`; tentativa de gravar um e-mail já usado por outro funcionário → `400`. Body vazio é aceito e não altera nada.
 - Banco: usa a tabela `employees` existente; nenhuma migração.
 - Depende de `request-authorization` (plugin `auth` e augmentação de tipos), entregue em `employee-profile-and-error-foundation`.

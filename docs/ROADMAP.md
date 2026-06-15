@@ -35,7 +35,7 @@
 - [~] Listar todos os funcionários (`get-all.ts` — `GET /employees/get-all`; paginação ainda pendente)
 - [x] Inativar funcionário (`deactivate.ts` — `PATCH /employees/deactivate/:id`)
 - [x] Ativar funcionário (`activate.ts` — `PATCH /employees/activate/:id`)
-- [x] Alterar funcionário (`update.ts` — `PUT /employees/update/:id`)
+- [x] Alterar funcionário (`update.ts` — `PATCH /employees/update/:id`)
 - [ ] Trocar foto de perfil do funcionário logado
 - [ ] Vincular funcionário a uma ou várias salas
 - [ ] Desvincular funcionário de uma ou várias salas

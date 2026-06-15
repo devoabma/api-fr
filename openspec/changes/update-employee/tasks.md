@@ -1,6 +1,6 @@
 ## 1. Caso de uso de edição (concluída)
 
-- [x] 1.1 Criar `update.ts` com rota `PUT /employees/update/:id` protegida por `auth`
+- [x] 1.1 Criar `update.ts` com rota `PATCH /employees/update/:id` protegida por `auth`
 - [x] 1.2 `checkIfEmployeeIsAdmin()` como primeira etapa do handler
 - [x] 1.3 Validar `:id` (cuid2) e body opcional (`name`, `email`, `role`) com Zod
 - [x] 1.4 `404` quando o funcionário não existe
