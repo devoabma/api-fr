@@ -125,9 +125,9 @@ O sistema pode gerar relatórios:
 - [x] Redefinir a senha.
 - [x] Enviar um e-mail para redefinir senha.
 - [x] Enviar um e-mail ao funcionário quando o ADM o cadastrar.
-- [ ] Listar todos os funcionários cadastrados.
-- [ ] Inativar um funcionário.
-- [ ] Ativar um funcionário.
+- [x] Listar todos os funcionários cadastrados.
+- [x] Inativar um funcionário.
+- [x] Ativar um funcionário.
 - [ ] Alterar um funcionário.
 - [ ] Trocar a foto de perfil do funcionário logado.
 - [ ] Vincular um funcionário a uma ou várias salas.

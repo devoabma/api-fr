@@ -8,6 +8,7 @@ import { getAllEmployees } from '../core/employees/get-all'
 import { getProfile } from '../core/employees/get-profile'
 import { requestPasswordRecovery } from '../core/employees/request-password-recovery'
 import { resetPassword } from '../core/employees/reset-password'
+import { updateEmployee } from '../core/employees/update'
 
 export async function appRoutes(app: FastifyInstance) {
   /* Employees (Funcionários) */
@@ -20,4 +21,5 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(deactivateEmployee, { prefix: '/employees' })
   app.register(activateEmployee, { prefix: '/employees' })
   app.register(changePassword, { prefix: '/employees' })
+  app.register(updateEmployee, { prefix: '/employees' })
 }

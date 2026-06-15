@@ -35,7 +35,7 @@
 - [~] Listar todos os funcionários (`get-all.ts` — `GET /employees/get-all`; paginação ainda pendente)
 - [x] Inativar funcionário (`deactivate.ts` — `PATCH /employees/deactivate/:id`)
 - [x] Ativar funcionário (`activate.ts` — `PATCH /employees/activate/:id`)
-- [ ] Alterar funcionário
+- [x] Alterar funcionário (`update.ts` — `PUT /employees/update/:id`)
 - [ ] Trocar foto de perfil do funcionário logado
 - [ ] Vincular funcionário a uma ou várias salas
 - [ ] Desvincular funcionário de uma ou várias salas
@@ -45,7 +45,7 @@
 - [x] Não permitir e-mail nem CPF duplicado
 - [x] Não trocar a senha se a nova for igual à antiga
 - [x] Somente ADMIN lista todos os funcionários
-- [~] Somente ADMIN inativa/ativa/altera funcionário (inativar/ativar protegidos; alterar pendente)
+- [x] Somente ADMIN inativa/ativa/altera funcionário
 - [x] Funcionário inativo não pode se autenticar
 - [ ] Não vincular funcionário a uma sala inativa
 
