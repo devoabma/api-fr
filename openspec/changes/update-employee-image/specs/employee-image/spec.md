@@ -2,7 +2,7 @@
 
 ### Requirement: Upload da foto de perfil do funcionário autenticado
 
-A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticado enviar a própria foto de perfil. A rota MUST registrar o plugin `auth` e resolver o alvo via `request.getIdCurrentEmployee()`. O corpo MUST ser `multipart/form-data` contendo um único arquivo, cujo tipo MUST estar na allowlist (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`) e cujo tamanho MUST respeitar o limite de 5MB. O arquivo MUST ser armazenado no bucket `profiles` do Supabase Storage em `uploads/<uuid>.<ext>`, e a URL pública e o caminho do arquivo MUST ser gravados em `imageUrl` e `imagePublicId` do funcionário. Quando o funcionário já possui `imagePublicId`, a imagem anterior MUST ser removida do bucket após o upload da nova; uma falha nessa remoção MUST resultar em `400`.
+A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticado enviar a própria foto de perfil. A rota MUST registrar o plugin `auth` e resolver o alvo via `request.getIdCurrentEmployee()`. O corpo MUST ser `multipart/form-data` contendo um único arquivo, cujo tipo MUST estar na allowlist (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`) e cujo tamanho MUST respeitar o limite de 5MB. O arquivo MUST ser armazenado no bucket `profiles` do Supabase Storage em `uploads/<uuid>.<ext>`, e a URL pública e o caminho do arquivo MUST ser gravados em `imageUrl` e `imagePublicId` do funcionário. Quando o funcionário já possui `imagePublicId`, a imagem anterior MUST ser removida do bucket após o cadastro ser atualizado para a nova; essa remoção é não-fatal (uma falha apenas é registrada e não impede a atualização nem altera a resposta `200`).
 
 #### Scenario: Funcionário troca a própria foto com sucesso
 
@@ -14,9 +14,9 @@ A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticad
 #### Scenario: Substituição da imagem anterior
 
 - **WHEN** o funcionário já possuía uma imagem (`imagePublicId` presente) e envia uma nova
-- **THEN** a nova imagem é enviada ao bucket
+- **THEN** a nova imagem é enviada ao bucket e o cadastro é atualizado
 - **AND** o arquivo anterior é removido do bucket
-- **AND** uma falha nessa remoção faz a API responder `400` e o cadastro não é atualizado
+- **AND** uma falha nessa remoção não impede a atualização do cadastro nem altera a resposta `200`
 
 #### Scenario: Nenhum arquivo enviado
 

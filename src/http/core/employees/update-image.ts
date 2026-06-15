@@ -76,16 +76,6 @@ export async function updateEmployeeImage(app: FastifyInstance) {
           throw new BadRequestError('Erro ao atualizar a imagem do funcionário.')
         }
 
-        // Se já existia uma imagem anterior, remove do bucket
-        if (employee.imagePublicId) {
-          const { error: removeError } = await supabase.storage.from('profiles').remove([employee.imagePublicId])
-
-          if (removeError) {
-            console.log({ removeError })
-            throw new BadRequestError('Erro ao atualizar a imagem do funcionário.')
-          }
-        }
-
         const { data } = supabase.storage.from('profiles').getPublicUrl(filePath)
 
         await prisma.employees.update({
@@ -95,6 +85,16 @@ export async function updateEmployeeImage(app: FastifyInstance) {
             imagePublicId: filePath,
           },
         })
+
+        // Imagem nova já gravada e ativa. Remove a antiga do bucket (não-fatal:
+        // se falhar, sobra um arquivo órfão, mas o cadastro permanece consistente)
+        if (employee.imagePublicId) {
+          const { error: removeError } = await supabase.storage.from('profiles').remove([employee.imagePublicId])
+
+          if (removeError) {
+            console.error('Falha ao remover a imagem antiga do bucket:', removeError)
+          }
+        }
 
         return reply.status(200).send({ imageUrl: data.publicUrl })
       }
