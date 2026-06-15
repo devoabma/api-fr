@@ -36,7 +36,7 @@
 - [x] Inativar funcionário (`deactivate.ts` — `PATCH /employees/deactivate/:id`)
 - [x] Ativar funcionário (`activate.ts` — `PATCH /employees/activate/:id`)
 - [x] Alterar funcionário (`update.ts` — `PATCH /employees/update/:id`)
-- [ ] Trocar foto de perfil do funcionário logado
+- [x] Trocar foto de perfil do funcionário logado (`update-image.ts` — `PATCH /employees/update-image`)
 - [ ] Vincular funcionário a uma ou várias salas
 - [ ] Desvincular funcionário de uma ou várias salas
 

@@ -1,6 +1,7 @@
 import { fastifyCookie } from '@fastify/cookie'
 import { fastifyCors } from '@fastify/cors'
 import { fastifyJwt } from '@fastify/jwt'
+import { fastifyMultipart } from '@fastify/multipart'
 import { fastifySwagger } from '@fastify/swagger'
 import ScalarApiReference from '@scalar/fastify-api-reference'
 import { fastify } from 'fastify'
@@ -54,5 +55,11 @@ app.register(fastifyCors, {
 })
 
 app.register(fastifyCookie)
+
+app.register(fastifyMultipart, {
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5mb
+  },
+})
 
 app.register(appRoutes)

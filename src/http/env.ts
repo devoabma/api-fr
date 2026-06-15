@@ -11,6 +11,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string(),
   RESEND_API_KEY: z.string(),
   TOKEN_COOKIE_NAME: z.string(),
+  PUBLIC_SUPABASE_URL: z.string(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string(),
 })
 
 const _env = envSchema.safeParse(process.env)

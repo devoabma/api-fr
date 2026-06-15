@@ -128,8 +128,8 @@ O sistema pode gerar relatórios:
 - [x] Listar todos os funcionários cadastrados.
 - [x] Inativar um funcionário.
 - [x] Ativar um funcionário.
-- [ ] Alterar um funcionário.
-- [ ] Trocar a foto de perfil do funcionário logado.
+- [x] Alterar um funcionário.
+- [x] Trocar a foto de perfil do funcionário logado.
 - [ ] Vincular um funcionário a uma ou várias salas.
 - [ ] Desvincular um funcionário de uma ou várias salas.
 - [ ] Não deve ser possível vincular um funcionário a uma sala inativa.
