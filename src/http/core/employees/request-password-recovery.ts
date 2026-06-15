@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
+import { badRequestSchema } from '@/http/_errors/schemas/error-responses'
 import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
 import { resend } from '@/lib/resend'
@@ -21,9 +22,7 @@ const requestPasswordRecoverySchema = {
     200: z.object({
       message: z.string(),
     }),
-    400: z.object({
-      message: z.string(),
-    }),
+    400: badRequestSchema,
   },
 } satisfies FastifySchema
 

@@ -3,6 +3,7 @@ import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
+import { badRequestSchema } from '@/http/_errors/schemas/error-responses'
 import { env } from '@/http/env'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
@@ -24,9 +25,7 @@ const createAccountSchema = {
     201: z.object({
       message: z.string(),
     }),
-    400: z.object({
-      message: z.string(),
-    }),
+    400: badRequestSchema,
   },
 } satisfies FastifySchema
 

@@ -4,6 +4,7 @@ import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
+import { badRequestSchema } from '@/http/_errors/schemas/error-responses'
 import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
 import { resend } from '@/lib/resend'
@@ -26,9 +27,7 @@ const resetPasswordSchema = {
     200: z.object({
       message: z.string(),
     }),
-    400: z.object({
-      message: z.string(),
-    }),
+    400: badRequestSchema,
   },
 } satisfies FastifySchema
 
@@ -96,7 +95,7 @@ export async function resetPassword(app: FastifyInstance) {
       const { error } = await resend.emails.send({
         from: '📧 Sala Livre <salalivre@hit.dev.br>',
         to: env.NODE_ENV === 'production' ? employee.email : 'hilquiasfmelo@gmail.com',
-        subject: 'Redefinição de senha',
+        subject: '🔑 Confirmação de redefinição de senha',
         react: SendConfirmationChangedPassword({
           name: employee.name,
           link: env.WEB_URL,

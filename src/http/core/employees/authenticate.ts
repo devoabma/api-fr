@@ -2,6 +2,7 @@ import { compare } from 'bcryptjs'
 import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
+import { badRequestSchema } from '@/http/_errors/schemas/error-responses'
 import { UnauthorizedError } from '@/http/_errors/unauthorized'
 import { env } from '@/http/env'
 import { prisma } from '@/lib/prisma'
@@ -18,9 +19,7 @@ const authenticateSchema = {
     200: z.object({
       token: z.string(),
     }),
-    400: z.object({
-      message: z.string(),
-    }),
+    400: badRequestSchema,
   },
 } satisfies FastifySchema
 

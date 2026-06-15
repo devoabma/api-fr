@@ -28,7 +28,7 @@
 - [x] Criar funcionário (`create-account.ts`)
 - [x] Autenticar (login) (`authenticate.ts`)
 - [x] Obter perfil do usuário logado (`get-profile.ts` — `GET /employees/profile`)
-- [ ] Trocar de senha
+- [x] Trocar de senha (`change-password.ts` — `PATCH /employees/change-password`)
 - [x] Redefinir senha (`reset-password.ts` — `POST /employees/reset-password`)
 - [x] Enviar e-mail para redefinir senha (`request-password-recovery.ts` — `POST /employees/password-recovery`)
 - [x] Enviar e-mail ao funcionário quando o ADM o cadastrar
