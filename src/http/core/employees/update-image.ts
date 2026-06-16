@@ -1,8 +1,7 @@
 import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
-import z from 'zod'
+import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
-import { NotFoundError } from '@/http/_errors/not-found'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 import { supabase } from '@/lib/supabase'
@@ -12,6 +11,20 @@ const updateEmployeeImageSchema = {
   summary: 'Atualiza a imagem de um funcionário',
   security: [{ bearerAuth: [] }],
   consumes: ['multipart/form-data'],
+  // O arquivo é lido via request.file() (@fastify/multipart), então a validação
+  // do body fica permissiva (z.any) e o schema OpenAPI é injetado via .meta()
+  // apenas para o Scalar/Swagger exibir o campo de upload da foto.
+  body: z.any().meta({
+    type: 'object',
+    properties: {
+      file: {
+        type: 'string',
+        format: 'binary',
+        description: 'Imagem do perfil do funcionário (JPG, PNG ou WEBP, até 5MB).',
+      },
+    },
+    required: ['file'],
+  }),
   response: {
     200: z.object({
       imageUrl: z.url(),
@@ -19,9 +32,7 @@ const updateEmployeeImageSchema = {
     400: z.object({
       message: z.string(),
     }),
-    404: z.object({
-      message: z.string(),
-    }),
+
     413: z.object({
       message: z.string(),
     }),
@@ -56,10 +67,6 @@ export async function updateEmployeeImage(app: FastifyInstance) {
           where: { id: employeeId },
         })
 
-        if (!employee) {
-          throw new NotFoundError('Funcionário não encontrado.')
-        }
-
         const buffer = await file.toBuffer()
 
         const fileExt = file.filename.split('.').pop() // Pega a extensão do arquivo
@@ -88,7 +95,7 @@ export async function updateEmployeeImage(app: FastifyInstance) {
 
         // Imagem nova já gravada e ativa. Remove a antiga do bucket (não-fatal:
         // se falhar, sobra um arquivo órfão, mas o cadastro permanece consistente)
-        if (employee.imagePublicId) {
+        if (employee && employee.imagePublicId) {
           const { error: removeError } = await supabase.storage.from('profiles').remove([employee.imagePublicId])
 
           if (removeError) {

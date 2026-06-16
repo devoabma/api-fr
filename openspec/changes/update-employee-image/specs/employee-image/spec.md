@@ -4,6 +4,8 @@
 
 A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticado enviar a própria foto de perfil. A rota MUST registrar o plugin `auth` e resolver o alvo via `request.getIdCurrentEmployee()`. O corpo MUST ser `multipart/form-data` contendo um único arquivo, cujo tipo MUST estar na allowlist (`image/jpeg`, `image/jpg`, `image/png`, `image/webp`) e cujo tamanho MUST respeitar o limite de 5MB. O arquivo MUST ser armazenado no bucket `profiles` do Supabase Storage em `uploads/<uuid>.<ext>`, e a URL pública e o caminho do arquivo MUST ser gravados em `imageUrl` e `imagePublicId` do funcionário. Quando o funcionário já possui `imagePublicId`, a imagem anterior MUST ser removida do bucket após o cadastro ser atualizado para a nova; essa remoção é não-fatal (uma falha apenas é registrada e não impede a atualização nem altera a resposta `200`).
 
+O schema da rota MUST declarar `consumes: ['multipart/form-data']` e um `body` com o campo `file` (`type: string`, `format: binary`) para que o Scalar/Swagger exiba o seletor de upload da foto. Como o arquivo é lido via `request.file()` (`@fastify/multipart`) e não pelo body parseado, a validação do body MUST permanecer permissiva (`z.any()`), com o schema OpenAPI injetado via `.meta()` — apenas para documentação, sem rejeitar a requisição multipart real.
+
 #### Scenario: Funcionário troca a própria foto com sucesso
 
 - **WHEN** um funcionário autenticado envia um arquivo de imagem válido
@@ -33,10 +35,11 @@ A API SHALL expor `PATCH /employees/update-image` para o funcionário autenticad
 - **WHEN** o arquivo enviado excede 5MB
 - **THEN** a API responde `413` com mensagem de arquivo muito grande
 
-#### Scenario: Funcionário inexistente
+#### Scenario: Campo de upload documentado no Scalar/Swagger
 
-- **WHEN** o `id` do funcionário autenticado não corresponde a nenhum registro
-- **THEN** a API responde `404` e nada é alterado
+- **WHEN** o spec OpenAPI da rota é gerado
+- **THEN** o `requestBody` expõe `multipart/form-data` com o campo `file` (`format: binary`)
+- **AND** o Scalar/Swagger renderiza o seletor de arquivo para anexar a foto
 
 #### Scenario: Requisição sem autorização
 

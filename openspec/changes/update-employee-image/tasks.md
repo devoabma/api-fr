@@ -10,11 +10,12 @@
 - [x] 2.1 Criar `update-image.ts` com rota `PATCH /employees/update-image` protegida por `auth`
 - [x] 2.2 Resolver o funcionário via `getIdCurrentEmployee()`
 - [x] 2.3 Validar presença do arquivo (`400`) e tipo via allowlist (`400`)
-- [x] 2.4 `404` quando o funcionário não existe
+- [x] 2.4 Confiar no funcionário autenticado resolvido por `getIdCurrentEmployee()` (sem `404`)
 - [x] 2.5 Upload para `profiles/uploads/<uuid>.<ext>` com `contentType: file.mimetype`
 - [x] 2.6 Gravar o cadastro e então remover a imagem antiga do bucket quando há `imagePublicId` (não-fatal)
 - [x] 2.7 Gravar `imageUrl` + `imagePublicId` e responder `200` com `{ imageUrl }`
-- [x] 2.8 Declarar `security` e schemas de resposta `200`/`400`/`404`/`413`
+- [x] 2.8 Declarar `security` e schemas de resposta `200`/`400`/`413`
+- [x] 2.9 Declarar `consumes: multipart/form-data` + `body` com `file` (`format: binary`) via `z.any().meta()` para o Scalar/Swagger exibir o upload
 
 ## 3. Tratamento de erro e registro
 
@@ -26,4 +27,4 @@
 
 - [x] 4.1 Bucket `profiles` criado como PUBLIC
 - [x] 4.2 Remover as policies de RLS do bucket (desnecessárias com `service_role`)
-- [x] 4.3 Validar manualmente upload, substituição da imagem antiga e os fluxos `400`/`404`/`413`/`401`
+- [x] 4.3 Validar manualmente upload, substituição da imagem antiga e os fluxos `400`/`413`/`401`
