@@ -32,7 +32,6 @@ const updateEmployeeImageSchema = {
     400: z.object({
       message: z.string(),
     }),
-
     413: z.object({
       message: z.string(),
     }),

@@ -41,7 +41,7 @@
 - [ ] Desvincular funcionário de uma ou várias salas
 
 ### Regras de negócio (RN)
-- [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários protegido; salas/computadores pendentes)
+- [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários e salas protegidos; computadores pendente)
 - [x] Não permitir e-mail nem CPF duplicado
 - [x] Não trocar a senha se a nova for igual à antiga
 - [x] Somente ADMIN lista todos os funcionários
@@ -54,14 +54,14 @@
 ## 2. Salas (Rooms)
 
 ### Casos de uso (RF)
-- [ ] Criar sala
+- [x] Criar sala (`create.ts` — `POST /rooms/create`)
 - [ ] Buscar todas as salas (paginado)
 - [ ] Editar sala
 - [ ] Inativar sala
 - [ ] Ativar sala
 
 ### Regras de negócio (RN)
-- [ ] Somente ADMIN cria/edita/inativa/ativa salas
+- [~] Somente ADMIN cria/edita/inativa/ativa salas (criação protegida; edição/inativação/ativação pendentes)
 
 ---
 
