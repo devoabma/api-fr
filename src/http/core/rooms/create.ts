@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import slugify from 'slugify'
 import { z } from 'zod'
+import { BadRequestError } from '@/http/_errors/bad-request'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -41,17 +42,17 @@ export async function createRoom(app: FastifyInstance) {
 
         const uppercaseName = name.toUpperCase()
 
-        const rawSlug = slugify(name, { lower: true, strict: true })
+        const slug = slugify(name, { lower: true, strict: true })
 
-        const slugCount = await prisma.rooms.count({
+        const roomWithSameSlug = await prisma.rooms.findUnique({
           where: {
-            slug: {
-              startsWith: rawSlug,
-            },
+            slug,
           },
         })
 
-        const slug = slugCount > 0 ? `${rawSlug}-${slugCount + 1}` : rawSlug
+        if (roomWithSameSlug) {
+          throw new BadRequestError('Sala com esse nome já cadastrada.')
+        }
 
         const room = await prisma.rooms.create({
           data: {

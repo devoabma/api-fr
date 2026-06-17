@@ -7,7 +7,7 @@ O roadmap (seção 2 — Salas) lista "Criar sala" como pendente e a regra de ne
 - **Novo caso de uso `create.ts`** (`POST /rooms/create`): rota protegida que cria uma sala. Recebe `name` (obrigatório), `standardTime` (inteiro positivo, opcional — assume o `@default(180)` do schema quando ausente) e `description` (opcional).
 - **Somente ADMIN**: a rota chama `request.checkIfEmployeeIsAdmin()`; funcionário não-ADMIN ou sem JWT recebe `401`.
 - **Nome normalizado**: o `name` é gravado em maiúsculas (`toUpperCase()`).
-- **Slug automático e único**: o `slug` é derivado do `name` via `slugify` (`lower: true`, `strict: true`); havendo colisão de prefixo, recebe um sufixo numérico (`-N`) para respeitar a constraint `@unique`.
+- **Slug automático e único**: o `slug` é derivado do `name` via `slugify` (`lower: true`, `strict: true`); havendo colisão exata com a constraint `@unique`, a criação é rejeitada com `400` ("Sala com esse nome já cadastrada.").
 - **Dependência `slugify`**: adicionada ao projeto.
 - **`routes/index.ts`**: registra a nova rota sob o prefixo `/rooms`.
 

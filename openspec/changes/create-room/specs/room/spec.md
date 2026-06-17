@@ -4,7 +4,7 @@
 
 A API SHALL expor `POST /rooms/create` para cadastrar uma sala. A rota MUST registrar o plugin `auth` e MUST exigir, via `request.checkIfEmployeeIsAdmin()`, que o funcionário autenticado tenha papel `ADMIN`. O corpo MUST conter `name` (string não vazia, obrigatório) e MAY conter `standardTime` (inteiro positivo) e `description` (string); quando `standardTime` for omitido, o valor padrão do banco (`180`) MUST ser aplicado.
 
-O `name` MUST ser persistido em maiúsculas. O `slug` MUST ser derivado do `name` via `slugify` (`lower: true`, `strict: true`) e MUST ser único: havendo registros cujo slug começa com o slug derivado, um sufixo numérico (`-N`) MUST ser anexado. Em caso de sucesso, a API MUST responder `201` com `{ roomId }`.
+O `name` MUST ser persistido em maiúsculas. O `slug` MUST ser derivado do `name` via `slugify` (`lower: true`, `strict: true`) e MUST ser único (constraint `@unique`): havendo uma sala cujo slug seja exatamente igual ao slug derivado, a API MUST rejeitar a criação com `400`. Em caso de sucesso, a API MUST responder `201` com `{ roomId }`.
 
 #### Scenario: ADMIN cria uma sala com sucesso
 
@@ -17,10 +17,10 @@ O `name` MUST ser persistido em maiúsculas. O `slug` MUST ser derivado do `name
 - **WHEN** o corpo não informa `standardTime`
 - **THEN** a sala é criada com o `standardTime` padrão do banco (`180`)
 
-#### Scenario: Colisão de slug recebe sufixo
+#### Scenario: Slug duplicado é rejeitado
 
-- **WHEN** já existe uma sala cujo slug começa com o slug derivado do novo `name`
-- **THEN** o slug da nova sala recebe um sufixo numérico (`-N`) para permanecer único
+- **WHEN** já existe uma sala cujo slug é exatamente igual ao slug derivado do novo `name`
+- **THEN** a API responde `400` com a mensagem "Sala com esse nome já cadastrada." e nenhuma sala é criada
 
 #### Scenario: Corpo inválido
 
