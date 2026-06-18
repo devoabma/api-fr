@@ -21,5 +21,5 @@ Após a criação de salas (change `create-room`), o roadmap (seção 2 — Sala
 - Banco: usa os modelos `rooms` e `computers` já existentes; nenhuma migração.
 - Contrato HTTP:
   - `GET /rooms/get-all` → `200` com `{ rooms: [...] }` (cada sala com seus `computers`); sem JWT/permissão → `401`.
-  - `PATCH /rooms/update/:id` → `200` com `{ message }`; `id` inexistente ou nome duplicado → `400`; sem JWT/permissão → `401`.
+  - `PATCH /rooms/update/:id` → `200` com `{ message }`; `id` inexistente → `404`; nome duplicado → `400`; sem JWT/permissão → `401`.
 - Documentação: `docs/ROADMAP.md` e `docs/DOC.md` marcam "Buscar todas as salas" e "Editar sala" como concluídos e a RN de ADMIN sobre salas como parcial.

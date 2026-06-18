@@ -24,7 +24,7 @@ A API SHALL expor `GET /rooms/get-all` para recuperar todas as salas cadastradas
 
 A API SHALL expor `PATCH /rooms/update/:id` para editar uma sala por `id`. A rota MUST registrar o plugin `auth` e MUST exigir, via `request.checkIfEmployeeIsAdmin()`, que o funcionário autenticado tenha papel `ADMIN`. O `id` (params) MUST ser um `cuid2`. O corpo é parcial: MAY conter `name` (string), `standardTime` (inteiro positivo) e `description` (string); apenas os campos enviados MUST ser atualizados.
 
-Se a sala não existir, a API MUST responder `400`. Quando `name` for enviado e diferente do nome atual (comparação em maiúsculas), o `name` MUST ser persistido em maiúsculas e o `slug` MUST ser regerado via `slugify` (`lower: true`, `strict: true`); a checagem de duplicidade MUST ignorar a própria sala (`id: { not: id }`) e, havendo outra sala com o mesmo slug, a API MUST rejeitar com `400`. Quando o nome não muda, o `slug` MUST permanecer inalterado. Em caso de sucesso, a API MUST responder `200` com `{ message }`.
+Se a sala não existir, a API MUST responder `404`. Quando `name` for enviado e diferente do nome atual (comparação em maiúsculas), o `name` MUST ser persistido em maiúsculas e o `slug` MUST ser regerado via `slugify` (`lower: true`, `strict: true`); a checagem de duplicidade MUST ignorar a própria sala (`id: { not: id }`) e, havendo outra sala com o mesmo slug, a API MUST rejeitar com `400`. Quando o nome não muda, o `slug` MUST permanecer inalterado. Em caso de sucesso, a API MUST responder `200` com `{ message }`.
 
 #### Scenario: ADMIN edita campos parciais
 
@@ -46,7 +46,7 @@ Se a sala não existir, a API MUST responder `400`. Quando `name` for enviado e 
 #### Scenario: Sala inexistente
 
 - **WHEN** o `id` informado não corresponde a nenhuma sala
-- **THEN** a API responde `400` com a mensagem "Sala não encontrada."
+- **THEN** a API responde `404` com a mensagem "Sala não encontrada."
 
 #### Scenario: Funcionário sem permissão ou sem autorização
 

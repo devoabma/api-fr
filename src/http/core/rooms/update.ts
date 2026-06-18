@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import slugify from 'slugify'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
+import { NotFoundError } from '@/http/_errors/not-found'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 
@@ -24,6 +25,12 @@ const updateRoomSchema = {
   }),
   response: {
     200: z.object({
+      message: z.string(),
+    }),
+    404: z.object({
+      message: z.string(),
+    }),
+    400: z.object({
       message: z.string(),
     }),
   },
@@ -49,7 +56,7 @@ export async function updateRoom(app: FastifyInstance) {
         })
 
         if (!room) {
-          throw new BadRequestError('Sala não encontrada.')
+          throw new NotFoundError('Sala não encontrada.')
         }
 
         const dataToUpdate: {

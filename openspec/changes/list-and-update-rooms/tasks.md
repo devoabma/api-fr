@@ -10,7 +10,7 @@
 - [x] 2.1 Criar `update.ts` com rota `PATCH /rooms/update/:id` protegida por `auth`
 - [x] 2.2 Restringir a ADMIN via `request.checkIfEmployeeIsAdmin()`
 - [x] 2.3 Validar `id` (cuid2) no params e body parcial (`name`, `standardTime`, `description` opcionais)
-- [x] 2.4 Rejeitar com `400` quando a sala não existir
+- [x] 2.4 Rejeitar com `404` (`NotFoundError`) quando a sala não existir
 - [x] 2.5 Quando `name` muda: normalizar para maiúsculas, regerar `slug` e rejeitar com `400` se outra sala (`id: { not: id }`) já tiver o mesmo slug
 - [x] 2.6 Não tocar no slug quando o nome não muda; montar `dataToUpdate` apenas com os campos enviados
 - [x] 2.7 Responder `200` com `{ message }`
