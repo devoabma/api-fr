@@ -55,13 +55,13 @@
 
 ### Casos de uso (RF)
 - [x] Criar sala (`create.ts` — `POST /rooms/create`)
-- [ ] Buscar todas as salas (paginado)
-- [ ] Editar sala
+- [~] Buscar todas as salas (`get-all.ts` — `GET /rooms/get-all`; com computadores, sem paginação ainda)
+- [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`)
 - [ ] Inativar sala
 - [ ] Ativar sala
 
 ### Regras de negócio (RN)
-- [~] Somente ADMIN cria/edita/inativa/ativa salas (criação protegida; edição/inativação/ativação pendentes)
+- [~] Somente ADMIN cria/edita/inativa/ativa salas (criação/listagem/edição protegidas; inativação/ativação pendentes)
 
 ---
 

@@ -11,6 +11,8 @@ import { resetPassword } from '../core/employees/reset-password'
 import { updateEmployee } from '../core/employees/update'
 import { updateEmployeeImage } from '../core/employees/update-image'
 import { createRoom } from '../core/rooms/create'
+import { getAllRooms } from '../core/rooms/get-all'
+import { updateRoom } from '../core/rooms/update'
 
 export async function appRoutes(app: FastifyInstance) {
   /* Employees (Funcionários) */
@@ -28,4 +30,6 @@ export async function appRoutes(app: FastifyInstance) {
 
   /* Rooms (Salas) */
   app.register(createRoom, { prefix: '/rooms' })
+  app.register(getAllRooms, { prefix: '/rooms' })
+  app.register(updateRoom, { prefix: '/rooms' })
 }

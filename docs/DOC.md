@@ -136,9 +136,10 @@ O sistema pode gerar relatórios:
 
 #### 🏢 Salas (Rooms)
 
-- [ ] Criar uma sala.
-- [ ] Buscar todas as salas.
-- [ ] Editar uma sala.
+- [x] Criar uma sala.
+- [x] Buscar todas as salas.
+- [ ] Buscar salas que o membro está vinculado.
+- [x] Editar uma sala.
 - [ ] Inativar uma sala.
 - [ ] Ativar uma sala.
 
@@ -164,6 +165,7 @@ O sistema pode gerar relatórios:
 - O funcionário não pode se autenticar se estiver inativo.
 - Somente administradores podem criar salas.
 - Somente administradores podem editar salas.
+- Somente administradores podem ver todas as salas.
 - Somente administradores podem inativar uma sala.
 - Somente administradores podem ativar uma sala.
 - Somente administradores podem cadastrar computadores.
