@@ -57,11 +57,11 @@
 - [x] Criar sala (`create.ts` — `POST /rooms/create`)
 - [~] Buscar todas as salas (`get-all.ts` — `GET /rooms/get-all`; com computadores, sem paginação ainda)
 - [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`)
-- [ ] Inativar sala
-- [ ] Ativar sala
+- [x] Inativar sala (`deactivate.ts` — `PATCH /rooms/deactivate/:id`)
+- [x] Ativar sala (`activate.ts` — `PATCH /rooms/activate/:id`)
 
 ### Regras de negócio (RN)
-- [~] Somente ADMIN cria/edita/inativa/ativa salas (criação/listagem/edição protegidas; inativação/ativação pendentes)
+- [x] Somente ADMIN cria/edita/inativa/ativa salas
 
 ---
 

@@ -140,8 +140,8 @@ O sistema pode gerar relatórios:
 - [x] Buscar todas as salas.
 - [ ] Buscar salas que o membro está vinculado.
 - [x] Editar uma sala.
-- [ ] Inativar uma sala.
-- [ ] Ativar uma sala.
+- [x] Inativar uma sala.
+- [x] Ativar uma sala.
 
 #### ⚖️ Advogados (Lawyers)
 
