@@ -21,13 +21,17 @@ As consultas de validação (`findUnique` do funcionário, `findMany` das salas,
 
 A regra de negócio do roadmap é aplicada filtrando `rooms` por `inactive` preenchido; havendo qualquer sala inativa, a operação é interrompida com `400` antes de qualquer escrita, citando os nomes para feedback claro ao cliente.
 
+### `roomIds` exige ao menos um item e é deduplicado
+
+O schema usa `z.array(z.cuid2()).min(1)` para rejeitar lista vazia — que de outra forma passaria por todas as guardas e responderia sucesso sem criar nada. Antes das validações, os IDs são deduplicados (`[...new Set(roomIds)]`): IDs repetidos (`[A, A]`) quebrariam a checagem `rooms.length !== roomIds.length` com um erro enganoso de "sala não encontrada".
+
 ### Rejeição de duplicidade na aplicação, não só no banco
 
 Embora `@@unique([employeeId, roomId])` proteja no nível do banco, a checagem prévia em `employeesRooms.findMany` permite devolver `400` com a lista de salas já vinculadas (mensagem clara) em vez de deixar estourar uma violação de constraint genérica.
 
-### Escrita atômica via `$transaction`
+### Escrita atômica via `createMany` idempotente
 
-Os `create` de cada vínculo rodam dentro de `prisma.$transaction([...])`, garantindo que ou todos os vínculos da requisição são criados, ou nenhum — evitando estado parcial caso uma das inserções falhe.
+Os vínculos são criados em um único `prisma.employeesRooms.createMany`, que já é atômico (um só INSERT). O `skipDuplicates: true`, combinado ao `@@unique([employeeId, roomId])`, torna a operação idempotente e elimina o TOCTOU teórico entre a checagem de vínculos existentes e a escrita (uma corrida entre requisições não estoura `P2002`).
 
 ### Autorização por rota
 

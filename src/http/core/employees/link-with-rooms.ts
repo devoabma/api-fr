@@ -12,7 +12,7 @@ const linkWithRoomsSchema = {
   security: [{ bearerAuth: [] }],
   body: z.object({
     employeeId: z.cuid2(),
-    roomIds: z.array(z.cuid2()),
+    roomIds: z.array(z.cuid2()).min(1, 'Informe ao menos uma sala.'),
   }),
   response: {
     200: z.object({
@@ -34,7 +34,11 @@ export async function linkWithRooms(app: FastifyInstance) {
     .post('/link-with-rooms', { schema: linkWithRoomsSchema }, async (request, reply) => {
       await request.checkIfEmployeeIsAdmin()
 
-      const { employeeId, roomIds } = request.body
+      const { employeeId } = request.body
+
+      // Remove IDs repetidos do payload (ex.: [A, A] viraria [A]).
+      // Sem isso, ids duplicados quebrariam a checagem "rooms.length !== roomIds.length" com erro enganoso.
+      const roomIds = [...new Set(request.body.roomIds)]
 
       const [employee, rooms] = await Promise.all([
         prisma.employees.findUnique({
@@ -84,17 +88,13 @@ export async function linkWithRooms(app: FastifyInstance) {
         throw new BadRequestError(`As salas ${existingRoomsNames} já foram vinculadas ao funcionário.`)
       }
 
-      // Criar vinculações necessárias para o funcionário e as salas
-      await prisma.$transaction(
-        roomIds.map(roomId => {
-          return prisma.employeesRooms.create({
-            data: {
-              employeeId,
-              roomId,
-            },
-          })
-        })
-      )
+      // Cria todos os vínculos em um único INSERT (atômico por natureza).
+      // skipDuplicates + o @@unique([employeeId, roomId]) do schema garantem idempotência
+      // (mesmo numa corrida entre requisições, não estoura erro de duplicidade).
+      await prisma.employeesRooms.createMany({
+        data: roomIds.map(roomId => ({ employeeId, roomId })),
+        skipDuplicates: true,
+      })
 
       return reply
         .status(200)
