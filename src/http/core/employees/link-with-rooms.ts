@@ -89,8 +89,7 @@ export async function linkWithRooms(app: FastifyInstance) {
       }
 
       // Cria todos os vínculos em um único INSERT (atômico por natureza).
-      // skipDuplicates + o @@unique([employeeId, roomId]) do schema garantem idempotência
-      // (mesmo numa corrida entre requisições, não estoura erro de duplicidade).
+      // skipDuplicates + o @@unique([employeeId, roomId]) do schema garantem idempotência (mesmo numa corrida entre requisições, não estoura erro de duplicidade).
       await prisma.employeesRooms.createMany({
         data: roomIds.map(roomId => ({ employeeId, roomId })),
         skipDuplicates: true,

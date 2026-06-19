@@ -138,7 +138,7 @@ O sistema pode gerar relatórios:
 
 - [x] Criar uma sala.
 - [x] Buscar todas as salas.
-- [ ] Buscar salas que o membro está vinculado.
+- [x] Buscar salas que o membro está vinculado.
 - [x] Editar uma sala.
 - [x] Inativar uma sala.
 - [x] Ativar uma sala.

@@ -4,9 +4,9 @@ import { z } from 'zod'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 
-const getAllRoomsSchema = {
+const getMemberRoomsSchema = {
   tags: ['rooms'],
-  summary: 'Recupera todas as salas cadastradas',
+  summary: 'Recupera as salas em que o funcionário está vinculado',
   security: [{ bearerAuth: [] }],
   response: {
     200: z.object({
@@ -16,7 +16,6 @@ const getAllRoomsSchema = {
           name: z.string(),
           standardTime: z.number(),
           description: z.string().nullable(),
-          inactive: z.date().nullable(),
           computers: z.array(
             z.object({
               id: z.cuid2(),
@@ -33,20 +32,28 @@ const getAllRoomsSchema = {
   },
 } satisfies FastifySchema
 
-export async function getAllRooms(app: FastifyInstance) {
+export async function getMemberRooms(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
-    .get('/get-all', { schema: getAllRoomsSchema }, async (request, reply) => {
-      await request.checkIfEmployeeIsAdmin()
+    .get('/get-member-rooms', { schema: getMemberRoomsSchema }, async (request, reply) => {
+      const employeeId = await request.getIdCurrentEmployee()
 
       const rooms = await prisma.rooms.findMany({
+        where: {
+          employeesRooms: {
+            // some => significa que pelo menos um item de employeesRooms tem employeeId
+            some: {
+              employeeId,
+            },
+          },
+          inactive: null,
+        },
         select: {
           id: true,
           name: true,
           standardTime: true,
           description: true,
-          inactive: true,
           computers: {
             select: {
               id: true,
