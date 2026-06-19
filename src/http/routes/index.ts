@@ -6,6 +6,7 @@ import { createAccount } from '../core/employees/create-account'
 import { deactivateEmployee } from '../core/employees/deactivate'
 import { getAllEmployees } from '../core/employees/get-all'
 import { getProfile } from '../core/employees/get-profile'
+import { linkWithRooms } from '../core/employees/link-with-rooms'
 import { requestPasswordRecovery } from '../core/employees/request-password-recovery'
 import { resetPassword } from '../core/employees/reset-password'
 import { updateEmployee } from '../core/employees/update'
@@ -29,6 +30,9 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(changePassword, { prefix: '/employees' })
   app.register(updateEmployee, { prefix: '/employees' })
   app.register(updateEmployeeImage, { prefix: '/employees' })
+
+  /* Employees (Funcionários) e Salas (Salas) */
+  app.register(linkWithRooms, { prefix: '/employees' })
 
   /* Rooms (Salas) */
   app.register(createRoom, { prefix: '/rooms' })

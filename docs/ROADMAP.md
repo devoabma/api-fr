@@ -37,7 +37,7 @@
 - [x] Ativar funcionário (`activate.ts` — `PATCH /employees/activate/:id`)
 - [x] Alterar funcionário (`update.ts` — `PATCH /employees/update/:id`)
 - [x] Trocar foto de perfil do funcionário logado (`update-image.ts` — `PATCH /employees/update-image`)
-- [ ] Vincular funcionário a uma ou várias salas
+- [x] Vincular funcionário a uma ou várias salas (`link-with-rooms.ts` — `POST /employees/link-with-rooms`)
 - [ ] Desvincular funcionário de uma ou várias salas
 
 ### Regras de negócio (RN)
@@ -47,7 +47,7 @@
 - [x] Somente ADMIN lista todos os funcionários
 - [x] Somente ADMIN inativa/ativa/altera funcionário
 - [x] Funcionário inativo não pode se autenticar
-- [ ] Não vincular funcionário a uma sala inativa
+- [x] Não vincular funcionário a uma sala inativa
 
 ---
 

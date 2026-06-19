@@ -130,9 +130,9 @@ O sistema pode gerar relatórios:
 - [x] Ativar um funcionário.
 - [x] Alterar um funcionário.
 - [x] Trocar a foto de perfil do funcionário logado.
-- [ ] Vincular um funcionário a uma ou várias salas.
+- [x] Vincular um funcionário a uma ou várias salas.
 - [ ] Desvincular um funcionário de uma ou várias salas.
-- [ ] Não deve ser possível vincular um funcionário a uma sala inativa.
+- [x] Não deve ser possível vincular um funcionário a uma sala inativa.
 
 #### 🏢 Salas (Rooms)
 
@@ -163,6 +163,8 @@ O sistema pode gerar relatórios:
 - Somente administradores podem ativar um funcionário.
 - Somente administradores podem alterar um funcionário.
 - O funcionário não pode se autenticar se estiver inativo.
+- Somente administradores podem vincular funcionários a salas.
+- Não é possível vincular um funcionário a uma sala inativa nem duplicar um vínculo existente.
 - Somente administradores podem criar salas.
 - Somente administradores podem editar salas.
 - Somente administradores podem ver todas as salas.
