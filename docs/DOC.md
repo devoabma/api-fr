@@ -117,7 +117,7 @@ O sistema pode gerar relatórios:
 
 #### 👔 Funcionários (Employees)
 
-- [ ] Criar seed do usuário administrador master (permissão para criar funcionários e salas).
+- [x] Criar seed do usuário administrador master (permissão para criar funcionários e salas).
 - [x] Cadastrar funcionários.
 - [x] Autenticar.
 - [x] Obter o perfil de um usuário logado.
@@ -142,6 +142,14 @@ O sistema pode gerar relatórios:
 - [x] Editar uma sala.
 - [x] Inativar uma sala.
 - [x] Ativar uma sala.
+
+#### 🖥️ Computadores (Computers)
+
+- [x] Cadastrar um computador.
+- [ ] Editar um computador.
+- [ ] Excluir um computador.
+- [ ] Listar computadores (paginado).
+- [ ] Liberar um computador manualmente.
 
 #### ⚖️ Advogados (Lawyers)
 

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { createComputer } from '../core/computers/create'
 import { activateEmployee } from '../core/employees/activate'
 import { authenticate } from '../core/employees/authenticate'
 import { changePassword } from '../core/employees/change-password'
@@ -44,4 +45,7 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(activateRoom, { prefix: '/rooms' })
   app.register(deactivateRoom, { prefix: '/rooms' })
   app.register(getMemberRooms, { prefix: '/rooms' })
+
+  /* Computers (Computadores) */
+  app.register(createComputer, { prefix: '/computers' })
 }

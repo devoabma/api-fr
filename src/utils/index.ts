@@ -11,3 +11,10 @@ export function generateRecoveryCode(length = 6): string {
 
   return code
 }
+
+export function formattedCodeMac(code: string) {
+  return code
+    .replace(/(\w{2})(\w{2})(\w{2})(\w{2})(\w{2})(\w{2})/, '$1-$2-$3-$4-$5-$6')
+    .trim()
+    .toUpperCase()
+}
