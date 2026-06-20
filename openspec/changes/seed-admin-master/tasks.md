@@ -7,8 +7,9 @@
 
 - [x] 2.1 Criar `prisma/seed.ts` com conexão via `PrismaPg`/`Pool` e `env` validado
 - [x] 2.2 Gerar `passwordHash` com bcrypt a partir de `PASSWORD_ADMIN`
-- [x] 2.3 Usar `upsert` por `email` (`@unique`): `create` com todos os campos e `role: 'ADMIN'`; `update` mantendo `name`/`cpf`/`passwordHash`/`role`
-- [x] 2.4 Encerrar `prisma.$disconnect()` e `pool.end()` no fim e tratar erro com `process.exit(1)`
+- [x] 2.3 `findUnique` por `email`: se já existir, sair sem alterar (idempotente); senão `create` com todos os campos e `role: 'ADMIN'`
+- [x] 2.4 Somente na criação, enviar e-mail de confirmação (`SendEmailEmployeeSignUp` via Resend), de forma não-fatal (erro apenas logado)
+- [x] 2.5 Encerrar `prisma.$disconnect()` e `pool.end()` no fim e tratar erro com `process.exit(1)`
 
 ## 3. Configuração de deploy
 

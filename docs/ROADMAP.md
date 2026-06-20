@@ -18,7 +18,7 @@
 - [x] Upload de imagem de perfil (Supabase Storage — `imageUrl` / `imagePublicId`)
 - [ ] Integração com API externa (Protheus) — validação de adimplência do advogado
 - [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
-- [x] Seed do usuário ADMIN master (`prisma/seed.ts` — `upsert` idempotente a partir do `.env`; rodar via `pnpm db:deploy` no release do deploy)
+- [x] Seed do usuário ADMIN master (`prisma/seed.ts` — cria o ADMIN a partir do `.env` quando ausente e envia e-mail de confirmação; idempotente via guard; rodar via `pnpm db:deploy` no release do deploy)
 
 ---
 
