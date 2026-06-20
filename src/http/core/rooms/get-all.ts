@@ -17,6 +17,15 @@ const getAllRoomsSchema = {
           standardTime: z.number(),
           description: z.string().nullable(),
           inactive: z.date().nullable(),
+          employeesRooms: z.array(
+            z.object({
+              employees: z.object({
+                id: z.cuid2(),
+                name: z.string(),
+                imageUrl: z.url().nullable(),
+              }),
+            })
+          ),
           computers: z.array(
             z.object({
               id: z.cuid2(),
@@ -47,6 +56,17 @@ export async function getAllRooms(app: FastifyInstance) {
           standardTime: true,
           description: true,
           inactive: true,
+          employeesRooms: {
+            select: {
+              employees: {
+                select: {
+                  id: true,
+                  name: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
           computers: {
             select: {
               id: true,

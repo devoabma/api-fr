@@ -55,7 +55,7 @@
 
 ### Casos de uso (RF)
 - [x] Criar sala (`create.ts` — `POST /rooms/create`)
-- [~] Buscar todas as salas (`get-all.ts` — `GET /rooms/get-all`; com computadores e disponibilidade `inUse`/`maintenance`, sem paginação ainda)
+- [~] Buscar todas as salas (`get-all.ts` — `GET /rooms/get-all`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados, sem paginação ainda)
 - [x] Buscar salas do funcionário logado (`get-member-rooms.ts` — `GET /rooms/get-member-rooms`; somente salas ativas vinculadas, com computadores e disponibilidade)
 - [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`)
 - [x] Inativar sala (`deactivate.ts` — `PATCH /rooms/deactivate/:id`)
