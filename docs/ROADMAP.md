@@ -38,7 +38,7 @@
 - [x] Alterar funcionário (`update.ts` — `PATCH /employees/update/:id`)
 - [x] Trocar foto de perfil do funcionário logado (`update-image.ts` — `PATCH /employees/update-image`)
 - [x] Vincular funcionário a uma ou várias salas (`link-with-rooms.ts` — `POST /employees/link-with-rooms`)
-- [ ] Desvincular funcionário de uma ou várias salas
+- [x] Desvincular funcionário de uma ou várias salas (`unlink-with-rooms.ts` — `POST /employees/unlink-with-rooms`)
 
 ### Regras de negócio (RN)
 - [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários e salas protegidos; computadores pendente)

@@ -131,7 +131,7 @@ O sistema pode gerar relatórios:
 - [x] Alterar um funcionário.
 - [x] Trocar a foto de perfil do funcionário logado.
 - [x] Vincular um funcionário a uma ou várias salas.
-- [ ] Desvincular um funcionário de uma ou várias salas.
+- [x] Desvincular um funcionário de uma ou várias salas.
 - [x] Não deve ser possível vincular um funcionário a uma sala inativa.
 
 #### 🏢 Salas (Rooms)
