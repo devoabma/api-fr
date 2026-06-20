@@ -1,3 +1,4 @@
+import { cpfSchema } from '@/utils/validations/cpf'
 import 'dotenv/config'
 
 import { z } from 'zod'
@@ -7,9 +8,12 @@ const envSchema = z.object({
   API_PORT: z.coerce.number().default(25600),
   WEB_URL: z.string().default('http://localhost:3000'),
   DOMAIN_URL: z.string().default('localhost'),
-  DATABASE_URL: z.string(),
+  CPF_ADMIN: cpfSchema,
+  EMAIL_ADMIN: z.email(),
   JWT_SECRET: z.string(),
+  DATABASE_URL: z.string(),
   RESEND_API_KEY: z.string(),
+  PASSWORD_ADMIN: z.string(),
   TOKEN_COOKIE_NAME: z.string(),
   PUBLIC_SUPABASE_URL: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
