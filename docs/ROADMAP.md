@@ -72,7 +72,7 @@
 - [x] Cadastrar computador (`create.ts` — `POST /computers/create`; MAC normalizado/único, `number` e `description` únicos por sala)
 - [ ] Editar computador
 - [ ] Excluir computador
-- [ ] Listar computadores (paginado)
+- [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; paginação ainda pendente)
 - [ ] Liberar computador manualmente (funcionário)
 
 ### Regras de negócio (RN)

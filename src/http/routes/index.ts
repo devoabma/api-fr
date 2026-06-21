@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { createComputer } from '../core/computers/create'
+import { getAllComputers } from '../core/computers/get-all'
 import { activateEmployee } from '../core/employees/activate'
 import { authenticate } from '../core/employees/authenticate'
 import { changePassword } from '../core/employees/change-password'
@@ -48,4 +49,5 @@ export async function appRoutes(app: FastifyInstance) {
 
   /* Computers (Computadores) */
   app.register(createComputer, { prefix: '/computers' })
+  app.register(getAllComputers, { prefix: '/computers' })
 }

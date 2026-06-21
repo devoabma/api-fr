@@ -148,7 +148,7 @@ O sistema pode gerar relatórios:
 - [x] Cadastrar um computador.
 - [ ] Editar um computador.
 - [ ] Excluir um computador.
-- [ ] Listar computadores (paginado).
+- [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; paginação pendente).
 - [ ] Liberar um computador manualmente.
 
 #### ⚖️ Advogados (Lawyers)
