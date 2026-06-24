@@ -21,7 +21,7 @@ const updateRoomSchema = {
       .int('Tempo padrão deve ser um inteiro')
       .positive('Tempo padrão deve ser positivo')
       .optional(),
-    description: z.string().optional(),
+    description: z.string().nullable().optional(),
   }),
   response: {
     200: z.object({
@@ -63,10 +63,11 @@ export async function updateRoom(app: FastifyInstance) {
           name?: string
           slug?: string
           standardTime?: number
-          description?: string
+          description?: string | null
         } = {
           ...(standardTime && { standardTime }),
-          ...(description && { description }),
+          // !== undefined: distingue "não enviou" (mantém) de "enviou ''/null" (limpa).
+          ...(description !== undefined && { description }),
         }
 
         if (name) {
