@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 
 const getAllComputersSchema = {
   tags: ['computers'],
-  summary: 'Recupera todos os computadores por sala ou descricão',
+  summary: 'Recupera todos os computadores por sala e/ou descricão',
   security: [{ bearerAuth: [] }],
   querystring: z.object({
     roomId: z.cuid2().optional(),
@@ -48,9 +48,7 @@ export async function getAllComputers(app: FastifyInstance) {
 
         const computers = await prisma.computers.findMany({
           where: {
-            roomId: {
-              equals: roomId,
-            },
+            roomId,
             description: {
               contains: description,
               mode: 'insensitive',

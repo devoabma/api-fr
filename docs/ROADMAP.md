@@ -41,7 +41,7 @@
 - [x] Desvincular funcionário de uma ou várias salas (`unlink-with-rooms.ts` — `POST /employees/unlink-with-rooms`)
 
 ### Regras de negócio (RN)
-- [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários, salas e cadastro de computadores protegidos; edição/exclusão de computadores pendente)
+- [~] Somente ADMIN cadastra funcionários/salas/computadores (funcionários, salas e cadastro/edição de computadores protegidos; exclusão de computadores pendente)
 - [x] Não permitir e-mail nem CPF duplicado
 - [x] Não trocar a senha se a nova for igual à antiga
 - [x] Somente ADMIN lista todos os funcionários
@@ -70,13 +70,13 @@
 
 ### Casos de uso (RF)
 - [x] Cadastrar computador (`create.ts` — `POST /computers/create`; MAC normalizado/único, `number` e `description` únicos por sala)
-- [ ] Editar computador
+- [x] Editar computador (`update.ts` — `PATCH /computers/update/:id`; atualização parcial restrita a ADMIN, MAC normalizado/único e `number`/`description` únicos na sala efetiva)
 - [ ] Excluir computador
 - [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; paginação ainda pendente)
 - [ ] Liberar computador manualmente (funcionário)
 
 ### Regras de negócio (RN)
-- [~] Somente ADMIN cadastra/edita/exclui computadores (cadastro protegido; edição/exclusão pendentes)
+- [~] Somente ADMIN cadastra/edita/exclui computadores (cadastro e edição protegidos; exclusão pendente)
 - [ ] Não liberar computador de sala inativa
 - [ ] Não liberar computador em manutenção
 - [ ] Não liberar computador já em uso

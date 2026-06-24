@@ -43,8 +43,6 @@ export async function createComputer(app: FastifyInstance) {
 
         const { macCode, number, description, roomId } = request.body
 
-        const uppercaseDescription = description.toUpperCase()
-
         const formattedMacCode = formattedCodeMac(macCode)
 
         if (formattedMacCode.length !== 17) {
@@ -81,6 +79,8 @@ export async function createComputer(app: FastifyInstance) {
         if (computerWithSameNumber) {
           throw new BadRequestError('Já existe um computador com esse número nesta sala.')
         }
+
+        const uppercaseDescription = description.toUpperCase()
 
         const computerWithSameDescription = await prisma.computers.findFirst({
           where: {
