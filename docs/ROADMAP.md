@@ -73,6 +73,7 @@
 - [x] Editar computador (`update.ts` — `PATCH /computers/update/:id`; atualização parcial restrita a ADMIN, MAC normalizado/único e `number`/`description` únicos na sala efetiva)
 - [ ] Excluir computador
 - [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; paginação ainda pendente)
+- [~] Colocar computador em manutenção (`put-into-maintenance.ts` — `PATCH /computers/maintenance/:id`; escopo do departamento, recusa se já em manutenção ou em uso; retirar de manutenção ainda pendente)
 - [ ] Liberar computador manualmente (funcionário)
 
 ### Regras de negócio (RN)
