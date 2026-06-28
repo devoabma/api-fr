@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { createComputer } from '../core/computers/create'
 import { getAllComputers } from '../core/computers/get-all'
 import { putIntoMaintenanceComputer } from '../core/computers/put-into-maintenance'
+import { takeOutOfMaintenanceComputer } from '../core/computers/take-out-of-maintenance'
 import { updateComputer } from '../core/computers/update'
 import { activateEmployee } from '../core/employees/activate'
 import { authenticate } from '../core/employees/authenticate'
@@ -54,4 +55,5 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(getAllComputers, { prefix: '/computers' })
   app.register(updateComputer, { prefix: '/computers' })
   app.register(putIntoMaintenanceComputer, { prefix: '/computers' })
+  app.register(takeOutOfMaintenanceComputer, { prefix: '/computers' })
 }

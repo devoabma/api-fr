@@ -6,9 +6,9 @@ import { NotFoundError } from '@/http/_errors/not-found'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
 
-const putIntoMaintenanceComputerSchema = {
+const takeOutOfMaintenanceComputerSchema = {
   tags: ['computers'],
-  summary: 'Coloca um computador em manutenção por ID',
+  summary: 'Retira um computador de manutenção por ID',
   security: [{ bearerAuth: [] }],
   params: z.object({
     id: z.cuid2(),
@@ -26,14 +26,14 @@ const putIntoMaintenanceComputerSchema = {
   },
 } satisfies FastifySchema
 
-export async function putIntoMaintenanceComputer(app: FastifyInstance) {
+export async function takeOutOfMaintenanceComputer(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .patch(
-      '/maintenance/:id',
+      '/maintenance/:id/remove',
       {
-        schema: putIntoMaintenanceComputerSchema,
+        schema: takeOutOfMaintenanceComputerSchema,
       },
       async (request, reply) => {
         const currentEmployeeId = await request.getIdCurrentEmployee()
@@ -49,8 +49,8 @@ export async function putIntoMaintenanceComputer(app: FastifyInstance) {
           throw new NotFoundError('Funcionário não encontrado.')
         }
 
-        // Manutenção é operação, não inventário: ADMIN coloca qualquer máquina em
-        // manutenção; funcionário comum só as de salas vinculadas a ele.
+        // Manutenção é operação, não inventário: ADMIN retira qualquer máquina da manutenção;
+        // Funcionário comum só as de salas vinculadas a ele.
         const computer = await prisma.computers.findUnique({
           where: {
             id,
@@ -62,35 +62,25 @@ export async function putIntoMaintenanceComputer(app: FastifyInstance) {
               },
             }),
           },
-          select: { maintenance: true, inUse: true },
+          select: {
+            maintenance: true,
+          },
         })
 
         if (!computer) {
           throw new NotFoundError('Computador não encontrado ou não pertence a uma sala vinculada a você.')
         }
 
-        if (computer.maintenance) {
-          throw new BadRequestError('Computador já está em manutenção.')
+        if (!computer.maintenance) {
+          throw new BadRequestError('Computador não estava em manutenção.')
         }
 
-        // Não derruba a sessão de um advogado silenciosamente: a sessão deve ser
-        // encerrada antes de a máquina entrar em manutenção.
-        if (computer.inUse) {
-          throw new BadRequestError('Computador em uso por um advogado. Encerre a sessão antes de colocá-lo em manutenção.')
-        }
-
-        // Estado consistente: máquina em manutenção não fica disponível para uso e
-        // não mantém vínculo com nenhum advogado.
         await prisma.computers.update({
           where: { id },
-          data: {
-            maintenance: new Date(),
-            inUse: false,
-            currentLawyerId: null,
-          },
+          data: { maintenance: null },
         })
 
-        return reply.status(200).send({ message: 'Computador colocado em manutenção.' })
+        return reply.status(200).send({ message: 'Computador retirado da manutenção.' })
       }
     )
 }
