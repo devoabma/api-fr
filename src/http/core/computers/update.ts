@@ -139,7 +139,7 @@ export async function updateComputer(app: FastifyInstance) {
             throw new BadRequestError('Já existe um computador com essa descrição nesta sala.')
           }
 
-          if (description) {
+          if (description !== undefined) {
             dataToUpdate.description = description.toUpperCase()
           }
         }
