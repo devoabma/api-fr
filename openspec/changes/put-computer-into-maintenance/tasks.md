@@ -1,8 +1,8 @@
 ## 1. Caso de uso de manutenção
 
 - [x] 1.1 Criar `put-into-maintenance.ts` com rota `PATCH /computers/maintenance/:id` protegida por `auth`
-- [x] 1.2 Restringir a ADMIN via `request.checkIfEmployeeIsAdmin()` e validar `id` (cuid) no path
-- [x] 1.3 Carregar o computador por `id`; inexistente → `404`
+- [x] 1.2 Identificar o funcionário via `request.getIdCurrentEmployee()`, carregar seu `role` e validar `id` (cuid) no path
+- [x] 1.3 Carregar o computador por `id`; para não-ADMIN, restringir às salas vinculadas (`room.employeesRooms.some(employeeId)`); inexistente/fora do escopo → `404`
 - [x] 1.4 Rejeitar com `400` quando o computador já estiver em manutenção (`maintenance` não-nulo)
 - [x] 1.5 Rejeitar com `400` quando o computador estiver em uso (`inUse`), preservando a sessão do advogado
 - [x] 1.6 Persistir `maintenance = now()`, `inUse = false` e `currentLawyerId = null`; responder `200` com `{ message }`
@@ -11,4 +11,4 @@
 
 - [x] 2.1 Registrar a rota em `routes/index.ts` sob o prefixo `/computers`
 - [x] 2.2 `npx tsc --noEmit` e `biome check` sem erros
-- [ ] 2.3 Validar manualmente os fluxos `200`/`400`/`404`/`401` (em manutenção, em uso, não-ADMIN)
+- [ ] 2.3 Validar manualmente os fluxos `200`/`400`/`404`/`401` (ADMIN, funcionário da sala, funcionário fora da sala, em manutenção, em uso)

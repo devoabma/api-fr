@@ -73,11 +73,11 @@
 - [x] Editar computador (`update.ts` — `PATCH /computers/update/:id`; atualização parcial restrita a ADMIN, MAC normalizado/único e `number`/`description` únicos na sala efetiva)
 - [ ] Excluir computador
 - [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; paginação ainda pendente)
-- [~] Colocar computador em manutenção (`put-into-maintenance.ts` — `PATCH /computers/maintenance/:id`; restrito a ADMIN, recusa se já em manutenção ou em uso; retirar de manutenção ainda pendente)
+- [~] Colocar computador em manutenção (`put-into-maintenance.ts` — `PATCH /computers/maintenance/:id`; ADMIN em qualquer máquina e funcionário comum nas de suas salas, recusa se já em manutenção ou em uso; retirar de manutenção ainda pendente)
 - [ ] Liberar computador manualmente (funcionário)
 
 ### Regras de negócio (RN)
-- [~] Somente ADMIN cadastra/edita/exclui/coloca em manutenção computadores (cadastro, edição e manutenção protegidos; exclusão pendente)
+- [~] Somente ADMIN cadastra/edita/exclui computadores (cadastro e edição protegidos; exclusão pendente). Manutenção é operacional: ADMIN em qualquer máquina, funcionário comum nas de suas salas
 - [ ] Não liberar computador de sala inativa
 - [ ] Não liberar computador em manutenção
 - [ ] Não liberar computador já em uso

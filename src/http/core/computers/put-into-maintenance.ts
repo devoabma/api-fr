@@ -36,17 +36,37 @@ export async function putIntoMaintenanceComputer(app: FastifyInstance) {
         schema: putIntoMaintenanceComputerSchema,
       },
       async (request, reply) => {
-        await request.checkIfEmployeeIsAdmin()
+        const currentEmployeeId = await request.getIdCurrentEmployee()
 
         const { id } = request.params
 
+        const employee = await prisma.employees.findUnique({
+          where: { id: currentEmployeeId },
+          select: { role: true },
+        })
+
+        if (!employee) {
+          throw new NotFoundError('Funcionário não encontrado.')
+        }
+
+        // Manutenção é operação, não inventário: ADMIN coloca qualquer máquina em
+        // manutenção; funcionário comum só as de salas vinculadas a ele.
         const computer = await prisma.computers.findUnique({
-          where: { id },
+          where: {
+            id,
+            ...(employee.role !== 'ADMIN' && {
+              room: {
+                employeesRooms: {
+                  some: { employeeId: currentEmployeeId },
+                },
+              },
+            }),
+          },
           select: { maintenance: true, inUse: true },
         })
 
         if (!computer) {
-          throw new NotFoundError('Computador não encontrado.')
+          throw new NotFoundError('Computador não encontrado ou não pertence a uma sala vinculada a você.')
         }
 
         if (computer.maintenance) {
