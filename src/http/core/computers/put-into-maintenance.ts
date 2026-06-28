@@ -36,25 +36,17 @@ export async function putIntoMaintenanceComputer(app: FastifyInstance) {
         schema: putIntoMaintenanceComputerSchema,
       },
       async (request, reply) => {
-        const currentEmployeeId = await request.getIdCurrentEmployee()
+        await request.checkIfEmployeeIsAdmin()
 
         const { id } = request.params
 
-        // Verifica se o computador pertence ao departamento do funcionário
         const computer = await prisma.computers.findUnique({
-          where: {
-            id,
-            room: {
-              employeesRooms: {
-                some: { employeeId: currentEmployeeId },
-              },
-            },
-          },
+          where: { id },
           select: { maintenance: true, inUse: true },
         })
 
         if (!computer) {
-          throw new NotFoundError('Computador não encontrado ou não pertence ao seu departamento.')
+          throw new NotFoundError('Computador não encontrado.')
         }
 
         if (computer.maintenance) {
