@@ -146,9 +146,10 @@ O sistema pode gerar relatórios:
 #### 🖥️ Computadores (Computers)
 
 - [x] Cadastrar um computador.
-- [ ] Editar um computador.
-- [ ] Excluir um computador.
+- [x] Editar um computador (`PATCH /computers/update/:id`; ADMIN-only, atualização parcial).
+- [x] Excluir um computador (`DELETE /computers/delete/:id`; ADMIN-only, recusa se em uso, remove sessões e impressões em cascata).
 - [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; paginação pendente).
+- [x] Colocar/retirar um computador de manutenção (`PATCH /computers/maintenance/:id` e `.../remove`; ADMIN em qualquer máquina, funcionário comum nas de suas salas).
 - [ ] Liberar um computador manualmente.
 
 #### ⚖️ Advogados (Lawyers)

@@ -116,7 +116,7 @@ model ComputerSessions {
   startedAt DateTime  @default(now()) @map("started_at")
   endedAt   DateTime? @map("ended_at")
 
-  computer   Computers @relation(fields: [computerId], references: [id])
+  computer   Computers @relation(fields: [computerId], references: [id], onDelete: Cascade)
   computerId String    @map("computer_id")
 
   lawyer   Lawyers @relation(fields: [lawyerId], references: [id])
