@@ -3,10 +3,11 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '../../../../generated/prisma/client'
 
 const getAllRoomsSchema = {
   tags: ['rooms'],
-  summary: 'Recupera todas as salas cadastradas',
+  summary: 'Lista as salas de acordo com o papel: ADMIN vê todas; MEMBER vê apenas as que participa',
   security: [{ bearerAuth: [] }],
   response: {
     200: z.object({
@@ -47,9 +48,23 @@ export async function getAllRooms(app: FastifyInstance) {
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .get('/get-all', { schema: getAllRoomsSchema }, async (request, reply) => {
-      await request.checkIfEmployeeIsAdmin()
+      const { id: employeeId, role } = await request.getCurrentEmployee()
+
+      // ADMIN enxerga o inventário completo (inclusive salas inativas).
+      // MEMBER enxerga somente as salas ATIVAS em que está vinculado.
+      const where: Prisma.RoomsWhereInput =
+        role === 'ADMIN'
+          ? {}
+          : {
+              inactive: null,
+              // some => pelo menos um vínculo em employeesRooms aponta para este funcionário
+              employeesRooms: {
+                some: { employeeId },
+              },
+            }
 
       const rooms = await prisma.rooms.findMany({
+        where,
         select: {
           id: true,
           name: true,

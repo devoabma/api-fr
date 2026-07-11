@@ -16,7 +16,10 @@ export const auth = fastifyPlugin(async (app: FastifyInstance) => {
       }
     }
 
-    request.checkIfEmployeeIsAdmin = async () => {
+    // Retorna o funcionário autenticado (id + role) em uma única query.
+    // Serve para decidir fluxo por papel SEM lançar erro (ex.: admin x membro),
+    // ao contrário de checkIfEmployeeIsAdmin, que apenas bloqueia.
+    request.getCurrentEmployee = async () => {
       const currentEmployeeId = await request.getIdCurrentEmployee()
 
       const employee = await prisma.employees.findUnique({
@@ -24,11 +27,23 @@ export const auth = fastifyPlugin(async (app: FastifyInstance) => {
           id: currentEmployeeId,
         },
         select: {
+          id: true,
           role: true,
         },
       })
 
-      if (!employee || employee.role !== 'ADMIN') {
+      // Token válido, mas o funcionário não existe mais (ex.: conta removida).
+      if (!employee) {
+        throw new UnauthorizedError()
+      }
+
+      return employee
+    }
+
+    request.checkIfEmployeeIsAdmin = async () => {
+      const { role } = await request.getCurrentEmployee()
+
+      if (role !== 'ADMIN') {
         throw new UnauthorizedError('Acesso negado. Você não possui permissão para executar essa operação.')
       }
     }

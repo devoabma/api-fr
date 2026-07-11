@@ -22,7 +22,6 @@ import { activateRoom } from '../core/rooms/activate'
 import { createRoom } from '../core/rooms/create'
 import { deactivateRoom } from '../core/rooms/deactivate'
 import { getAllRooms } from '../core/rooms/get-all'
-import { getMemberRooms } from '../core/rooms/get-member-rooms'
 import { updateRoom } from '../core/rooms/update'
 
 export async function appRoutes(app: FastifyInstance) {
@@ -49,7 +48,6 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(updateRoom, { prefix: '/rooms' })
   app.register(activateRoom, { prefix: '/rooms' })
   app.register(deactivateRoom, { prefix: '/rooms' })
-  app.register(getMemberRooms, { prefix: '/rooms' })
 
   /* Computers (Computadores) */
   app.register(createComputer, { prefix: '/computers' })
