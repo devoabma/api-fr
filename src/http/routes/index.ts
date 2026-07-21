@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+
 import { createComputer } from '../core/computers/create'
 import { deleteComputer } from '../core/computers/delete'
 import { getAllComputers } from '../core/computers/get-all'
@@ -18,6 +19,8 @@ import { resetPassword } from '../core/employees/reset-password'
 import { unlinkWithRooms } from '../core/employees/unlink-with-rooms'
 import { updateEmployee } from '../core/employees/update'
 import { updateEmployeeImage } from '../core/employees/update-image'
+import { closeSession } from '../core/lawyers/close-session'
+import { releaseComputer } from '../core/lawyers/release-computer'
 import { activateRoom } from '../core/rooms/activate'
 import { createRoom } from '../core/rooms/create'
 import { deactivateRoom } from '../core/rooms/deactivate'
@@ -56,4 +59,8 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(putIntoMaintenanceComputer, { prefix: '/computers' })
   app.register(takeOutOfMaintenanceComputer, { prefix: '/computers' })
   app.register(deleteComputer, { prefix: '/computers' })
+
+  /* Lawyers (Advogados) */
+  app.register(releaseComputer, { prefix: '/lawyers' })
+  app.register(closeSession, { prefix: '/lawyers' })
 }

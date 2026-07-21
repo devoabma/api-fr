@@ -16,7 +16,7 @@
 - [ ] Paginação reutilizável (10 itens por página) — RNF
 - [x] Envio de e-mail (confirmação de cadastro, solicitação de reset e confirmação de troca de senha)
 - [x] Upload de imagem de perfil (Supabase Storage — `imageUrl` / `imagePublicId`)
-- [ ] Integração com API externa (Protheus) — validação de adimplência do advogado
+- [x] Integração com API externa (Protheus) — validação de adimplência do advogado (`src/lib/axios.ts` — client `API_PROTHEUS_DATA`)
 - [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
 - [x] Seed do usuário ADMIN master (`prisma/seed.ts` — cria o ADMIN a partir do `.env` quando ausente e envia e-mail de confirmação; idempotente via guard; rodar via `pnpm db:deploy` no release do deploy)
 
@@ -86,25 +86,25 @@
 ## 4. Advogados (Lawyers) e Sessões
 
 ### Casos de uso (RF)
-- [ ] Solicitar uso de computador em uma sala (abre sessão)
-- [ ] Cron job que encerra sessões expiradas e libera o computador
-- [ ] Cancelar sessão (guardando o tempo restante)
-- [ ] Continuar sessão de onde parou (apenas no mesmo dia)
+- [x] Solicitar uso de computador em uma sala (abre sessão) (`release-computer.ts` — `POST /lawyers/release-computer`; pública, autenticação por CPF/OAB/nascimento)
+- [ ] Cron job que encerra sessões expiradas e libera o computador (hoje o encerramento por tempo esgotado só ocorre de forma reativa, ao tentar liberar novamente o mesmo computador)
+- [x] Cancelar sessão (guardando o tempo restante) (`close-session.ts` — `POST /lawyers/close-computer/:sessionId`)
+- [x] Continuar sessão de onde parou (apenas no mesmo dia) (cota diária global via `getDailyQuota` — soma sessões finalizadas no dia em qualquer sala)
 - [ ] Buscar todas as sessões (paginado)
 
 ### Regras de negócio (RN)
-- [ ] Validar adimplência na API externa antes de liberar
-- [ ] Validar/criar advogado na tabela `lawyers` a partir dos dados externos
-- [ ] Advogado existe (Lawyers)
-- [ ] Computador existe e não está em uso (`inUse === false`)
-- [ ] Advogado tem tempo restante (`remainingTime > 0`)
-- [ ] Computador pertence a uma sala ativa (`inactive === null`)
-- [ ] Advogado não pode ter duas sessões ao mesmo tempo
-- [ ] Dados vindos da API externa não podem ser editados
-- [ ] Não acessar no mesmo dia se o tempo acabou
-- [ ] Ao cancelar, guardar o tempo restante
-- [ ] Só usar o tempo restante no mesmo dia
-- [ ] Só liberar se estiver adimplente
+- [x] Validar adimplência na API externa antes de liberar
+- [x] Validar/criar advogado na tabela `lawyers` a partir dos dados externos
+- [x] Advogado existe (Lawyers)
+- [x] Computador existe e não está em uso (`inUse === false`)
+- [x] Advogado tem tempo restante (`remainingTime > 0`) (via saldo diário global)
+- [x] Computador pertence a uma sala ativa (`inactive === null`)
+- [x] Advogado não pode ter duas sessões ao mesmo tempo
+- [x] Dados vindos da API externa não podem ser editados (advogado(a) só é criado/atualizado a partir do que a API retorna)
+- [x] Não acessar no mesmo dia se o tempo acabou
+- [x] Ao cancelar, guardar o tempo restante
+- [x] Só usar o tempo restante no mesmo dia
+- [x] Só liberar se estiver adimplente
 
 ---
 

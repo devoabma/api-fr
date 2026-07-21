@@ -16,6 +16,7 @@ const envSchema = z.object({
   PASSWORD_ADMIN: z.string(),
   TOKEN_COOKIE_NAME: z.string(),
   PUBLIC_SUPABASE_URL: z.string(),
+  API_PROTHEUS_DATA_URL: z.string(),
   SUPABASE_SERVICE_ROLE_KEY: z.string(),
 })
 

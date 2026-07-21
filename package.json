@@ -17,7 +17,7 @@
     "url": "https://github.com/hfmelodev"
   },
   "license": "ISC",
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.13.0",
   "devDependencies": {
     "@biomejs/biome": "2.4.16",
     "@react-email/ui": "^6.6.6",

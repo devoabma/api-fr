@@ -9,5 +9,11 @@ app
   .then(() => {
     console.log(`
     🚀 \x1b[32m> Servidor iniciado com sucesso
-    📡 \x1b[33m> Aguardando conexões na porta ${env.API_PORT}`)
+    📡 \x1b[33m> Aguardando conexões na porta ${env.API_PORT}
+       \x1b[33m
+    `)
+  })
+  .catch(err => {
+    console.error(err)
+    process.exit(1)
   })
