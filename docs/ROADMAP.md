@@ -91,7 +91,7 @@
 - [ ] Cron job que encerra sessões expiradas e libera o computador (hoje o encerramento por tempo esgotado só ocorre de forma reativa, ao tentar liberar novamente o mesmo computador)
 - [x] Cancelar sessão (guardando o tempo restante) (`close-session.ts` — `POST /lawyers/close-computer/:sessionId`)
 - [x] Continuar sessão de onde parou (apenas no mesmo dia) (cota diária global via `getDailyQuota` — soma sessões finalizadas no dia em qualquer sala)
-- [~] Buscar todas as sessões (`get-all-releases.ts` — `GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; filtros por advogado/data e cálculo de `usedMinutes`/`remainingMinutes`/`usedAllTime`; paginação ainda pendente)
+- [~] Buscar todas as sessões (`get-all-releases.ts` — `GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; filtros por advogado/data, retorna o computador usado (`id`/`description`) e cálculo de `usedMinutes`/`remainingMinutes`/`usedAllTime`; paginação ainda pendente)
 
 ### Regras de negócio (RN)
 - [x] Validar adimplência na API externa antes de liberar

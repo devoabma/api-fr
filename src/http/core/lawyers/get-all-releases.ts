@@ -34,6 +34,10 @@ const getAllReleasesSchema = {
           name: z.string(),
           standardTime: z.number().int().nonnegative(),
         }),
+        computer: z.object({
+          id: z.cuid2(),
+          description: z.string(),
+        }),
         usedMinutes: z.number().int().nonnegative(),
         remainingMinutes: z.number().int().nonnegative(),
         usedAllTime: z.boolean(),
@@ -101,6 +105,8 @@ export async function getAllReleases(app: FastifyInstance) {
             },
             computer: {
               select: {
+                id: true,
+                description: true,
                 room: {
                   select: {
                     id: true,
@@ -133,6 +139,10 @@ export async function getAllReleases(app: FastifyInstance) {
             endDate: session.endedAt,
             lawyer: session.lawyer,
             room: session.computer.room,
+            computer: {
+              id: session.computer.id,
+              description: session.computer.description,
+            },
             usedMinutes,
             remainingMinutes,
             usedAllTime,

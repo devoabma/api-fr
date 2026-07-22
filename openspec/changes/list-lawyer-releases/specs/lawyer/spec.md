@@ -8,6 +8,8 @@ O `roomId` (param opcional, cuid2) MUST filtrar por uma sala específica. A quer
 
 A visibilidade MUST respeitar o papel do funcionário autenticado: ADMIN MUST ver sessões de qualquer sala; MEMBER MUST ver apenas sessões de salas em que está vinculado (`employeesRooms`). Se um MEMBER informar `roomId` de uma sala à qual não está vinculado, a resposta MUST ser uma lista vazia (não um erro).
 
+Cada sessão retornada MUST incluir o `computer` usado (`id` e `description` — o modelo `Computers` não possui campo `name`, `description` é o identificador legível).
+
 Para cada sessão a API MUST calcular `usedMinutes` (diferença em minutos entre `startedAt` e `endedAt`, ou o momento atual quando a sessão ainda está em andamento), `remainingMinutes` (`standardTime` da sala menos `usedMinutes`, MUST NUNCA ser negativo) e `usedAllTime` (`true` quando `usedMinutes >= standardTime`).
 
 #### Scenario: ADMIN lista todas as sessões
