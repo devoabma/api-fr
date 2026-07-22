@@ -88,7 +88,7 @@
 
 ### Casos de uso (RF)
 - [x] Solicitar uso de computador em uma sala (abre sessão) (`release-computer.ts` — `POST /lawyers/release-computer`; pública, autenticação por CPF/OAB/nascimento)
-- [ ] Cron job que encerra sessões expiradas e libera o computador (hoje o encerramento por tempo esgotado só ocorre de forma reativa, ao tentar liberar novamente o mesmo computador)
+- [x] Cron job que encerra sessões expiradas e libera o computador (`src/http/jobs/auto-close-sessions.ts`; loop in-process a cada 60s, update condicional evita corrida com `close-computer`/`release-computer`)
 - [x] Cancelar sessão (guardando o tempo restante) (`close-session.ts` — `POST /lawyers/close-computer/:sessionId`)
 - [x] Continuar sessão de onde parou (apenas no mesmo dia) (cota diária global via `getDailyQuota` — soma sessões finalizadas no dia em qualquer sala)
 - [~] Buscar todas as sessões (`get-all-releases.ts` — `GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; filtros por advogado/data, retorna o computador usado (`id`/`description`) e cálculo de `usedMinutes`/`remainingMinutes`/`usedAllTime`; paginação ainda pendente)
