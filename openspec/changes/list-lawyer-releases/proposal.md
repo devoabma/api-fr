@@ -21,6 +21,6 @@ O roadmap (seção 4 — Advogados e Sessões) marcava como pendente "Buscar tod
 
 - Código novo: `src/http/core/lawyers/get-all-releases.ts`.
 - Alterado: `src/http/routes/index.ts` (registro da rota), `src/http/app.ts` (`setNotFoundHandler`).
-- Contrato HTTP: `GET /lawyers/get-all-releases/:roomId?` → `200` com array de sessões (`id`, `startDate`, `endDate`, `lawyer`, `room`, `computer`, `usedMinutes`, `remainingMinutes`, `usedAllTime`).
+- Contrato HTTP: `GET /lawyers/get-all-releases/:roomId?` → `200` com `{ releases: [...] }`, cada item com `id`, `startDate`, `endDate`, `lawyer`, `room`, `computer`, `usedMinutes`, `remainingMinutes`, `usedAllTime`.
 - Banco: apenas leitura em `computerSessions`/`computers`/`lawyers`/`rooms` já existentes; nenhuma migração.
 - Documentação: `docs/ROADMAP.md` marca "Buscar todas as sessões" como `[~]` (paginação ainda pendente).

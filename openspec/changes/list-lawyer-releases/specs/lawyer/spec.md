@@ -2,7 +2,7 @@
 
 ### Requirement: Listagem de sessões de liberação
 
-A API SHALL expor `GET /lawyers/get-all-releases/:roomId?` para listar o histórico de sessões de uso (liberações). A rota MUST exigir autenticação de funcionário (JWT).
+A API SHALL expor `GET /lawyers/get-all-releases/:roomId?` para listar o histórico de sessões de uso (liberações). A rota MUST exigir autenticação de funcionário (JWT). A resposta MUST ser um objeto `{ releases: [...] }` (não um array na raiz), preparando espaço para metadados de paginação futura.
 
 O `roomId` (param opcional, cuid2) MUST filtrar por uma sala específica. A querystring MAY conter `lawyer` (nome do advogado(a), busca parcial case-insensitive), `startDate` e `endDate` (intervalo aplicado sobre `startedAt`).
 

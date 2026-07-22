@@ -20,29 +20,31 @@ const getAllReleasesSchema = {
     endDate: z.coerce.date().optional(),
   }),
   response: {
-    200: z.array(
-      z.object({
-        id: z.cuid2(),
-        startDate: z.date(),
-        endDate: z.date().nullable(),
-        lawyer: z.object({
+    200: z.object({
+      releases: z.array(
+        z.object({
           id: z.cuid2(),
-          name: z.string(),
-        }),
-        room: z.object({
-          id: z.cuid2(),
-          name: z.string(),
-          standardTime: z.number().int().nonnegative(),
-        }),
-        computer: z.object({
-          id: z.cuid2(),
-          description: z.string(),
-        }),
-        usedMinutes: z.number().int().nonnegative(),
-        remainingMinutes: z.number().int().nonnegative(),
-        usedAllTime: z.boolean(),
-      })
-    ),
+          startDate: z.date(),
+          endDate: z.date().nullable(),
+          lawyer: z.object({
+            id: z.cuid2(),
+            name: z.string(),
+          }),
+          room: z.object({
+            id: z.cuid2(),
+            name: z.string(),
+            standardTime: z.number().int().nonnegative(),
+          }),
+          computer: z.object({
+            id: z.cuid2(),
+            description: z.string(),
+          }),
+          usedMinutes: z.number().int().nonnegative(),
+          remainingMinutes: z.number().int().nonnegative(),
+          usedAllTime: z.boolean(),
+        })
+      ),
+    }),
   },
 } satisfies FastifySchema
 
@@ -149,7 +151,7 @@ export async function getAllReleases(app: FastifyInstance) {
           }
         })
 
-        return reply.status(200).send(releases)
+        return reply.status(200).send({ releases })
       }
     )
 }
