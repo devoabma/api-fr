@@ -154,11 +154,11 @@ O sistema pode gerar relatórios:
 
 #### ⚖️ Advogados (Lawyers)
 
-- [ ] Solicitar o uso do computador em uma determinada sala.
+- [x] Solicitar o uso do computador em uma determinada sala (`POST /lawyers/release-computer`).
 - [ ] Criar cron job que verifica sessões encerradas dos advogados e libera o computador.
-- [ ] Cancelar a própria sessão.
-- [ ] Continuar a sessão de onde parou (no mesmo dia somente).
-- [ ] Buscar todas as sessões.
+- [x] Cancelar a própria sessão (`POST /lawyers/close-computer/:sessionId`).
+- [x] Continuar a sessão de onde parou (no mesmo dia somente).
+- [~] Buscar todas as sessões (`GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação pendente).
 
 ### 📐 RNs — Regras de Negócio
 

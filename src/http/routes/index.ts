@@ -20,6 +20,7 @@ import { unlinkWithRooms } from '../core/employees/unlink-with-rooms'
 import { updateEmployee } from '../core/employees/update'
 import { updateEmployeeImage } from '../core/employees/update-image'
 import { closeSession } from '../core/lawyers/close-session'
+import { getAllReleases } from '../core/lawyers/get-all-releases'
 import { releaseComputer } from '../core/lawyers/release-computer'
 import { activateRoom } from '../core/rooms/activate'
 import { createRoom } from '../core/rooms/create'
@@ -63,4 +64,5 @@ export async function appRoutes(app: FastifyInstance) {
   /* Lawyers (Advogados) */
   app.register(releaseComputer, { prefix: '/lawyers' })
   app.register(closeSession, { prefix: '/lawyers' })
+  app.register(getAllReleases, { prefix: '/lawyers' })
 }

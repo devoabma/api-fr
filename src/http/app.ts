@@ -16,6 +16,12 @@ app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
 
 app.setErrorHandler(errorHandler)
+app.setNotFoundHandler((request, reply) => {
+  return reply.status(404).send({
+    message: 'Rota não encontrada.',
+    route: request.url,
+  })
+})
 
 app.register(fastifySwagger, {
   openapi: {
