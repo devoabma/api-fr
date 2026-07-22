@@ -21,6 +21,7 @@
 - [x] Handler para rota inexistente (`app.setNotFoundHandler` — `404` com `{ message, route }`)
 - [x] Seed do usuário ADMIN master (`prisma/seed.ts` — cria o ADMIN a partir do `.env` quando ausente e envia e-mail de confirmação; idempotente via guard; rodar via `pnpm db:deploy` no release do deploy)
 - [x] Build de produção (`tsup.config.ts` — compila `src` para `build/` em ESM; `pnpm build` + `pnpm start` executam o artefato sem depender de `tsx`)
+- [x] Deploy em produção (Coolify + Cloudflare Tunnel — runbook completo em [`docs/DEPLOY.md`](./DEPLOY.md))
 
 ---
 
