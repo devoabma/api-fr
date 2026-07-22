@@ -1,0 +1,10 @@
+node_modules
+generated
+.git
+.vscode
+.claude
+docs
+openspec
+.env
+.env.example
+*.log

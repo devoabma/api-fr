@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/http/server.ts",
+    "start": "tsx src/http/server.ts",
     "email": "email dev --dir src/utils/emails",
     "postinstall": "prisma generate",
     "db:deploy": "prisma migrate deploy && prisma db seed"
