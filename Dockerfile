@@ -30,8 +30,11 @@ ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/generated ./generated
 COPY --from=build /app/build ./build
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json prisma.config.ts ./
 COPY prisma ./prisma
+# src/ é necessário em runtime porque `prisma db seed` roda via tsx
+# (prisma/seed.ts) direto do TypeScript fonte, não do bundle em build/.
+COPY src ./src
 COPY docker-entrypoint.sh ./
 
 RUN chmod +x docker-entrypoint.sh && chown -R node:node /app
