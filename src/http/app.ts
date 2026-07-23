@@ -23,6 +23,10 @@ app.setNotFoundHandler((request, reply) => {
   })
 })
 
+app.get('/health', async (_request, reply) => {
+  return reply.status(200).send({ status: 'ok' })
+})
+
 app.register(fastifySwagger, {
   openapi: {
     info: {

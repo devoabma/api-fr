@@ -102,6 +102,23 @@ Variáveis necessárias (mesmas do `.env.example`, com valores de produção):
 `DATABASE_URL` aponta pra um Postgres externo (Neon), então não depende de
 rede interna do Docker — funciona igual em dev e em produção.
 
+### Health check
+
+A API expõe `GET /health` (sem auth, sem tocar no banco — só confirma que o
+processo Node/Fastify está respondendo). O Dockerfile já define um
+`HEALTHCHECK` usando o `fetch` nativo do Node (sem precisar de `curl`/`wget`
+na imagem):
+
+```dockerfile
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD node -e "fetch('http://localhost:3333/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+```
+
+Isso é o suficiente pro Coolify parar de mostrar `Running (unknown)` e passar
+a reportar `Healthy`/`Unhealthy` de verdade — não precisa configurar nada a
+mais na aba **Healthcheck** do Coolify, ele lê o `HEALTHCHECK` da imagem
+automaticamente.
+
 ---
 
 ## Cloudflare Tunnel
