@@ -115,7 +115,7 @@
 
 ### Casos de uso (RF)
 - [x] Registrar arquivo enviado para impressão (cria registro em `printers`)
-- [ ] Listar arquivos pendentes da(s) sala(s) do funcionário
+- [x] Listar arquivos pendentes da(s) sala(s) do funcionário
 - [ ] Baixar arquivo para impressão
 - [ ] (Opcional) Atualizar status `downloaded_at` / `printed_at`
 - [ ] Cron job: apagar impressões do servidor 1 dia após o envio

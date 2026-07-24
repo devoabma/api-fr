@@ -163,6 +163,7 @@ O sistema pode gerar relatórios:
 #### 🖨️ Impressões (Printers)
 
 - [x] Enviar um arquivo para impressão pelo advogado com sessão ativa (`POST /printers/send-to-print/:macCode`; sem JWT, identifica a sessão pelo `macCode` do computador).
+- [~] Listar as impressões enviadas (`GET /printers/get-all/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação e filtro por status pendentes).
 
 ### 📐 RNs — Regras de Negócio
 
