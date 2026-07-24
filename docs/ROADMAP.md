@@ -114,7 +114,7 @@
 ## 5. Impressão (Printers)
 
 ### Casos de uso (RF)
-- [ ] Registrar arquivo enviado para impressão (cria registro em `printers`)
+- [x] Registrar arquivo enviado para impressão (cria registro em `printers`)
 - [ ] Listar arquivos pendentes da(s) sala(s) do funcionário
 - [ ] Baixar arquivo para impressão
 - [ ] (Opcional) Atualizar status `downloaded_at` / `printed_at`

@@ -44,10 +44,10 @@ export const errorHandler: FastifyErrorHandler = (error, _request, reply) => {
     })
   }
 
-  // Arquivo enviado excede o limite definido no @fastify/multipart
+  // Arquivo enviado excede o limite definido no @fastify/multipart (global ou por rota)
   if ((error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE') {
     return reply.status(413).send({
-      message: 'Arquivo muito grande. O tamanho máximo permitido é 5MB.',
+      message: 'Arquivo muito grande. Verifique o tamanho máximo permitido para este envio.',
     })
   }
 

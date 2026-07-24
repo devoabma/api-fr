@@ -160,6 +160,10 @@ O sistema pode gerar relatórios:
 - [x] Continuar a sessão de onde parou (no mesmo dia somente).
 - [~] Buscar todas as sessões (`GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação pendente).
 
+#### 🖨️ Impressões (Printers)
+
+- [x] Enviar um arquivo para impressão pelo advogado com sessão ativa (`POST /printers/send-to-print/:macCode`; sem JWT, identifica a sessão pelo `macCode` do computador).
+
 ### 📐 RNs — Regras de Negócio
 
 #### 👔 Funcionários (Employees)
