@@ -94,10 +94,15 @@ variável deve ficar marcada só como **"Available at Runtime"**, com
 > Corrigido desmarcando o toggle pra cada variável.
 
 Variáveis necessárias (mesmas do `.env.example`, com valores de produção):
-`NODE_ENV`, `API_PORT`, `WEB_URL`, `DOMAIN_URL`, `TOKEN_COOKIE_NAME`,
+`NODE_ENV`, `API_PORT`, `TIMEZONE`, `WEB_URL`, `DOMAIN_URL`, `TOKEN_COOKIE_NAME`,
 `CPF_ADMIN`, `PASSWORD_ADMIN`, `EMAIL_ADMIN`, `DATABASE_URL`,
 `RESEND_API_KEY`, `JWT_SECRET`, `PUBLIC_SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `API_PROTHEUS_DATA_URL`.
+
+`TIMEZONE` é o fuso da seccional (IANA, ex: `America/Fortaleza`). Ele governa o
+cálculo de tempo das sessões e o horário dos jobs agendados — não o fuso do
+servidor. Se não for definido, cai no default `America/Fortaleza`; se vier um
+valor inválido, a API não sobe (falha no boot em vez de errar horário calado).
 
 `DATABASE_URL` aponta pra um Postgres externo (Neon), então não depende de
 rede interna do Docker — funciona igual em dev e em produção.

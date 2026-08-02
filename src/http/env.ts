@@ -3,9 +3,23 @@ import 'dotenv/config'
 
 import { z } from 'zod'
 
+const timezoneSchema = z.string().refine(
+  timezone => {
+    try {
+      new Intl.DateTimeFormat('pt-BR', { timeZone: timezone })
+
+      return true
+    } catch {
+      return false
+    }
+  },
+  { message: 'Fuso horário inválido, use um identificador IANA (ex: America/Fortaleza)' }
+)
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['dev', 'production']).default('dev'),
   API_PORT: z.coerce.number().default(25600),
+  TIMEZONE: timezoneSchema.default('America/Fortaleza'),
   WEB_URL: z.string().default('http://localhost:3000'),
   DOMAIN_URL: z.string().default('localhost'),
   CPF_ADMIN: cpfSchema,

@@ -61,7 +61,7 @@ Cada **computador** (`computers`) possui:
 3. O funcionário baixa o arquivo e realiza a impressão.
 4. Opcionalmente, o status do arquivo pode ser atualizado (`downloaded_at` / `printed_at`).
 
-> 🗑️ As impressões devem ser apagadas do servidor **um dia após** o envio.
+> 🗑️ As impressões são apagadas do servidor **toda sexta-feira às 23:59:59** (fuso de `TIMEZONE`), por job agendado: o arquivo sai do bucket `prints` e o registro sai da tabela `printers`.
 
 ### Administração e Relatórios
 
@@ -164,6 +164,7 @@ O sistema pode gerar relatórios:
 
 - [x] Enviar um arquivo para impressão pelo advogado com sessão ativa (`POST /printers/send-to-print/:macCode`; sem JWT, identifica a sessão pelo `macCode` do computador).
 - [~] Listar as impressões enviadas (`GET /printers/get-all/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação e filtro por status pendentes).
+- [x] Criar cron job que apaga as impressões do servidor toda sexta-feira às 23:59:59 (job in-process via `node-cron`, no fuso de `TIMEZONE`; remove o arquivo do bucket `prints` antes de apagar o registro).
 
 ### 📐 RNs — Regras de Negócio
 

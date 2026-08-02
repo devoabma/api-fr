@@ -118,7 +118,8 @@
 - [x] Listar arquivos pendentes da(s) sala(s) do funcionário
 - [ ] Baixar arquivo para impressão
 - [ ] (Opcional) Atualizar status `downloaded_at` / `printed_at`
-- [ ] Cron job: apagar impressões do servidor 1 dia após o envio
+- [x] Cron job: apagar impressões do servidor toda sexta-feira às 23:59:59 (`src/http/jobs/delete-weekly-prints.cron.ts`; `node-cron` no fuso de `TIMEZONE`, remove do bucket `prints` antes de apagar o registro)
+  - Regra revisada: era "1 dia após o envio"; passou a ser expurgo semanal, para não apagar arquivo enviado na sexta antes de ser impresso na segunda
 
 ---
 

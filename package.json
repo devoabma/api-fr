@@ -19,7 +19,7 @@
     "url": "https://github.com/hfmelodev"
   },
   "license": "ISC",
-  "packageManager": "pnpm@11.13.0",
+  "packageManager": "pnpm@11.18.0",
   "devDependencies": {
     "@biomejs/biome": "2.4.16",
     "@react-email/ui": "^6.6.6",
@@ -49,6 +49,7 @@
     "fastify": "^5.9.0",
     "fastify-plugin": "^6.0.0",
     "fastify-type-provider-zod": "^6.1.0",
+    "node-cron": "^4.6.0",
     "pg": "^8.22.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
