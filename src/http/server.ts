@@ -1,6 +1,6 @@
 import { app } from './app'
 import { env } from './env'
-import { startAutoCloseSessionsJob } from './jobs/auto-close-sessions'
+import { startAutoCloseSessionsJob } from './jobs/auto-close-sessions.cron'
 import { startDeleteWeeklyPrintsJob } from './jobs/delete-weekly-prints.cron'
 
 app

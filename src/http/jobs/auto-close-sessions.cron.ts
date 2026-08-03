@@ -1,7 +1,10 @@
+import cron from 'node-cron'
+import { env } from '@/http/env'
 import { dayjs } from '@/lib/dayjs'
 import { prisma } from '@/lib/prisma'
 
-const INTERVAL_MS = 60 * 1000 // 1 minuto
+// 5 campos (minuto hora dia mês dia-da-semana): a cada 1 minuto
+const CRON_EXPRESSION = '* * * * *'
 
 const TRANSIENT_DB_ERROR_CODES = new Set(['ETIMEDOUT', 'ECONNRESET', 'P1001', 'P1017'])
 const TRANSIENT_DB_ERROR_MESSAGE = /timeout exceeded when trying to connect/i
@@ -17,9 +20,6 @@ function isTransientDbError(err: unknown): boolean {
 }
 
 async function closeSession(sessionId: string, computerId: string, lawyerId: string, now: Date) {
-  // Update condicional: só fecha se a sessão ainda estiver ativa. Isso evita que o job
-  // "pise" numa sessão que já foi encerrada por /close-computer ou /release-computer
-  // entre a leitura (findMany) e a escrita deste tick (janela de até 10s).
   const { count } = await prisma.computerSessions.updateMany({
     where: { id: sessionId, endedAt: null },
     data: { endedAt: now },
@@ -28,15 +28,10 @@ async function closeSession(sessionId: string, computerId: string, lawyerId: str
   if (count === 0) return
 
   await prisma.$transaction([
-    // Só libera o computador se ele ainda estiver vinculado a ESTE advogado(a): entre a
-    // leitura e a escrita, o computador pode já ter sido liberado e reatribuído a outra
-    // sessão/advogado(a), e não podemos derrubar essa sessão nova.
     prisma.computers.updateMany({
       where: { id: computerId, currentLawyerId: lawyerId },
       data: { inUse: false, currentLawyerId: null },
     }),
-    // Mesma semântica do fechamento forçado por tempo em release-computer.ts: cota do
-    // dia zerada e lastAccess marcando o instante do encerramento (nunca null).
     prisma.lawyers.update({
       where: { id: lawyerId },
       data: { remainingTime: 0, lastAccess: now },
@@ -92,19 +87,25 @@ async function checkExpiredSessions() {
 }
 
 export function startAutoCloseSessionsJob() {
-  async function run() {
-    try {
-      await checkExpiredSessions()
-    } catch (err) {
-      if (isTransientDbError(err)) {
-        console.warn(`[AutoClose ⚠️ ] Falha transitória de conexão com o banco, tentando de novo em ${INTERVAL_MS / 1000}s...`)
-      } else {
-        console.error('[AutoClose ❌] Erro ao verificar sessões expiradas:', err)
+  cron.schedule(
+    CRON_EXPRESSION,
+    async () => {
+      try {
+        await checkExpiredSessions()
+      } catch (err) {
+        if (isTransientDbError(err)) {
+          console.warn('[AutoClose ⚠️ ] Falha transitória de conexão com o banco, tentando de novo no próximo minuto...')
+        } else {
+          console.error('[AutoClose ❌] Erro ao verificar sessões expiradas:', err)
+        }
       }
-    } finally {
-      setTimeout(run, INTERVAL_MS) // ← só agenda o próximo DEPOIS de terminar
+    },
+    {
+      name: 'auto-close-sessions',
+      timezone: env.TIMEZONE,
+      // Se um tick demorar mais de 1 minuto, o próximo é descartado em vez de rodar em
+      // paralelo — mesma garantia do setTimeout encadeado que existia aqui antes.
+      noOverlap: true,
     }
-  }
-
-  run()
+  )
 }

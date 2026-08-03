@@ -155,7 +155,7 @@ O sistema pode gerar relatórios:
 #### ⚖️ Advogados (Lawyers)
 
 - [x] Solicitar o uso do computador em uma determinada sala (`POST /lawyers/release-computer`).
-- [x] Criar cron job que verifica sessões expiradas dos advogados e libera o computador (job in-process, verifica a cada 60s).
+- [x] Criar cron job que verifica sessões expiradas dos advogados e libera o computador (`node-cron` in-process, verifica a cada 1min sem sobreposição).
 - [x] Cancelar a própria sessão (`POST /lawyers/close-computer/:sessionId`).
 - [x] Continuar a sessão de onde parou (no mesmo dia somente).
 - [~] Buscar todas as sessões (`GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação pendente).
