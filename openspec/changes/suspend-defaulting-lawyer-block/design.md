@@ -36,4 +36,4 @@ A condição foi escrita como `!env.ALLOW_DEFAULTING_LAWYERS && !consultedLawyer
 
 Seria tentador tratar as duas validações como "as checagens do Protheus" e envolver ambas na flag. Seria errado. Advogado(a) com registro cancelado, ou fora das situações liberadas, não é uma questão financeira — é ausência de habilitação. Nenhuma determinação de liberação geral pede para atender quem não está habilitado, e confundir as duas regras na pressa de um deploy político é justamente o tipo de erro que essa entrega existe para evitar.
 
-Manter a ordem original também preserva a mensagem de erro correta: quem está inativo **e** inadimplente continua recebendo "Advogado(a) inativo, entre em contato com a OAB", que é a orientação útil, mesmo com a flag ligada.
+Manter a ordem original também preserva a mensagem de erro correta: quem está fora das situações liberadas **e** inadimplente continua recebendo a mensagem sobre a situação do registro (encaminhamento à Seccional), que é a orientação útil, mesmo com a flag ligada.

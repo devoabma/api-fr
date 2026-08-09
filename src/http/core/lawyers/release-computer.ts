@@ -65,13 +65,13 @@ export async function releaseComputer(app: FastifyInstance) {
       const result = lawyerApiSchema.safeParse(response.data)
 
       if (!result.success) {
-        throw new NotFoundError('Consulta indisponível ou advogado(a) não encontrado.')
+        throw new NotFoundError('Consulta indisponível ou advogado(a) não encontrado. Tente novamente mais tarde.')
       }
 
       const { lawyer: consultedLawyer } = result.data
 
       if (!SITUACOES_LIBERADAS.includes(consultedLawyer.situacao)) {
-        throw new BadRequestError('Advogado(a) inativo, entre em contato com a OAB.')
+        throw new BadRequestError('Advogado(a) não ativo. Para mais informações, entre em contato com a sua Seccional.')
       }
 
       /**
@@ -80,13 +80,17 @@ export async function releaseComputer(app: FastifyInstance) {
        * sempre — a exceção vale só para a pendência financeira.
        */
       if (!env.ALLOW_DEFAULTING_LAWYERS && !consultedLawyer.adimplente) {
-        throw new BadRequestError('Advogado(a) inadimplente. Regularize sua situação financeira na OAB.')
+        throw new BadRequestError(
+          'Não foi possível prosseguir com a liberação. Para mais informações, entre em contato com o Setor Financeiro da sua Seccional.'
+        )
       }
 
       const formattedBirth = dayjs(consultedLawyer.dataNascimento).format('DDMMYYYY')
 
       if (consultedLawyer.cpf !== cpf || consultedLawyer.registro !== oab || formattedBirth !== birth) {
-        throw new BadRequestError('Dados informados não conferem com os dados junto a OAB.')
+        throw new BadRequestError(
+          'Informações fornecidas não conferem com os dados junto a sua Seccional. Por favor, verifique e tente novamente.'
+        )
       }
 
       /** Realiza a validação do computador e sala antes de cadastrar o Advogado(a) */
@@ -108,7 +112,7 @@ export async function releaseComputer(app: FastifyInstance) {
       })
 
       if (!computer) {
-        throw new NotFoundError('Computador não encontrado.')
+        throw new NotFoundError('Computador não encontrado. Tente novamente mais tarde.')
       }
 
       if (computer.room.inactive) {
@@ -116,7 +120,7 @@ export async function releaseComputer(app: FastifyInstance) {
       }
 
       if (computer.maintenance) {
-        throw new BadRequestError('Computador em manutenção.')
+        throw new BadRequestError('Computador em manutenção. Entre em contato com a administração.')
       }
 
       /** Verifica se o advgado ja esta cadastrado, senao atualiza ele no banco */
