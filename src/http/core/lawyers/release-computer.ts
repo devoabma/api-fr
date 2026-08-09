@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
 import { NotFoundError } from '@/http/_errors/not-found'
 import { tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
+import { env } from '@/http/env'
 import { rateLimits } from '@/http/rate-limit'
 import { API_PROTHEUS_DATA } from '@/lib/axios'
 import { dayjs } from '@/lib/dayjs'
@@ -73,7 +74,12 @@ export async function releaseComputer(app: FastifyInstance) {
         throw new BadRequestError('Advogado(a) inativo, entre em contato com a OAB.')
       }
 
-      if (!consultedLawyer.adimplente) {
+      /**
+       * O bloqueio por inadimplência pode ser suspenso por determinação da OAB (ver
+       * `ALLOW_DEFAULTING_LAWYERS` no env). A situação do registro continua sendo validada
+       * sempre — a exceção vale só para a pendência financeira.
+       */
+      if (!env.ALLOW_DEFAULTING_LAWYERS && !consultedLawyer.adimplente) {
         throw new BadRequestError('Advogado(a) inadimplente. Regularize sua situação financeira na OAB.')
       }
 

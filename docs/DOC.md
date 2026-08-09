@@ -208,7 +208,7 @@ Demais regras:
 - Não é possível o advogado acessar no mesmo dia se o tempo dele acabou.
 - Ao cancelar a sessão, guardar o tempo restante.
 - O advogado só poderá usar o tempo restante se ainda houver, no mesmo dia.
-- O advogado só poderá liberar um computador se estiver adimplente.
+- O advogado só poderá liberar um computador se estiver adimplente, salvo quando a OAB determinar liberação geral (`ALLOW_DEFAULTING_LAWYERS="true"` no ambiente).
 - Somente administradores podem emitir relatórios.
 
 ### ⚙️ RNFs — Requisitos Não-Funcionais

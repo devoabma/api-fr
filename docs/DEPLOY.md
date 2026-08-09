@@ -96,6 +96,7 @@ variável deve ficar marcada só como **"Available at Runtime"**, com
 Variáveis necessárias (mesmas do `.env.example`, com valores de produção):
 `NODE_ENV`, `API_PORT`, `TIMEZONE`, `TRUST_PROXY`, `WEB_URL`, `DOMAIN_URL`,
 `TOKEN_COOKIE_NAME`, `CPF_ADMIN`, `PASSWORD_ADMIN`, `EMAIL_ADMIN`,
+`ALLOW_DEFAULTING_LAWYERS` (opcional — ver seção abaixo),
 `DATABASE_URL`, `RESEND_API_KEY`, `JWT_SECRET`, `PUBLIC_SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `API_PROTHEUS_DATA_URL`.
 
@@ -106,6 +107,36 @@ valor inválido, a API não sobe (falha no boot em vez de errar horário calado)
 
 `DATABASE_URL` aponta pra um Postgres externo (Neon), então não depende de
 rede interna do Docker — funciona igual em dev e em produção.
+
+### `ALLOW_DEFAULTING_LAWYERS` — liberação geral por determinação da OAB
+
+Normalmente **não existe** nas variáveis do Coolify (ausente = `false` = só
+adimplente libera computador). Ela só entra em cena quando a diretoria
+determina liberação geral, adimplentes e inadimplentes.
+
+Para ligar: criar a variável com o valor `true` e **reiniciar** o container
+(ela é lida uma única vez, no boot). Não precisa de build nem de migração.
+Para desligar: apagar a variável (ou pôr `false`) e reiniciar de novo.
+
+| Valor | Efeito |
+| --- | --- |
+| ausente / `false` | ✅ operação normal — inadimplente recebe `400` |
+| `true` | ⚠️ inadimplente libera computador |
+| `1`, `sim`, `yes`, `on` | ✅ tratado como `false` — só a string `true` liga |
+
+A última linha é proposital: um valor ambíguo lido como `true` liberaria
+inadimplentes sem ninguém ter pedido e passaria meses despercebido, enquanto
+lido como `false` alguém reclama no mesmo dia que a determinação não pegou.
+
+A exceção suspende **apenas** a pendência financeira. Advogado(a) com registro
+fora das situações liberadas (inativo, cancelado) continua barrado, e as demais
+regras — conferência de CPF/OAB/nascimento, cota diária, sala ativa,
+computador livre — seguem valendo.
+
+Enquanto estiver ligada, todo boot imprime um aviso vermelho nos logs do
+container. É o único ponto do sistema que anuncia a exceção: vale marcar no
+calendário a data em que a determinação vence, porque a variável não expira
+sozinha.
 
 ### `TRUST_PROXY` — o valor muda entre dev e produção
 
@@ -226,3 +257,5 @@ application routes**:
 | Domínio público cai na tela do Coolify em vez da API | Rota do Cloudflare Tunnel apontando pra porta `8000` em vez de `80`. |
 | Secrets aparecem em texto puro no log de build do Coolify | Variável marcada como "Available at Buildtime" — desmarcar, deixar só "Available at Runtime". |
 | Usuários tomando `429` sem motivo / login e recuperação de senha bloqueados pra todo mundo ao mesmo tempo | `TRUST_PROXY` em `false` (ou ausente) em produção: o rate limit está contando todos os clientes como um IP só. Ver seção acima. |
+| Determinação de liberação geral não pegou — inadimplente continua recebendo `400` | `ALLOW_DEFAULTING_LAWYERS` com valor diferente da string `true` (ex: `1`, `sim`), ou container não reiniciado depois de criar a variável. Confirmar o aviso vermelho nos logs do boot. |
+| Inadimplente liberando computador sem determinação vigente | `ALLOW_DEFAULTING_LAWYERS=true` esquecida de uma determinação anterior. Apagar a variável e reiniciar. |

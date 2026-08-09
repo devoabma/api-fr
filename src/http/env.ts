@@ -43,8 +43,14 @@ const trustProxySchema = z
     return Number.isInteger(hops) && hops > 0 ? hops : value
   })
 
+const allowDefaultingLawyersSchema = z
+  .string()
+  .default('false')
+  .transform(value => value.trim().toLowerCase() === 'true')
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['dev', 'production']).default('dev'),
+  ALLOW_DEFAULTING_LAWYERS: allowDefaultingLawyersSchema,
   API_PORT: z.coerce.number().default(25600),
   TRUST_PROXY: trustProxySchema,
   TIMEZONE: timezoneSchema.default('America/Fortaleza'),

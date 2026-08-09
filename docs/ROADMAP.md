@@ -108,7 +108,7 @@
 - [x] Não acessar no mesmo dia se o tempo acabou
 - [x] Ao cancelar, guardar o tempo restante
 - [x] Só usar o tempo restante no mesmo dia
-- [x] Só liberar se estiver adimplente
+- [x] Só liberar se estiver adimplente (suspensível por determinação da OAB via `ALLOW_DEFAULTING_LAWYERS="true"` no ambiente; padrão bloqueia, e o boot avisa em vermelho enquanto a exceção estiver ligada)
 
 ---
 

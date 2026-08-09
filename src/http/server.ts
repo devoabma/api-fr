@@ -17,6 +17,13 @@ app
        \x1b[33m
     `)
 
+    // Exceção temporária e de alto impacto: precisa gritar a cada boot para não ficar ligada por esquecimento.
+    if (env.ALLOW_DEFAULTING_LAWYERS) {
+      console.warn(
+        '\x1b[41m\x1b[97m ATENÇÃO \x1b[0m \x1b[33m> ALLOW_DEFAULTING_LAWYERS=true — Advogados(as) INADIMPLENTES estão liberados.\x1b[0m\n'
+      )
+    }
+
     startAutoCloseSessionsJob()
     startDeleteWeeklyPrintsJob()
   })
