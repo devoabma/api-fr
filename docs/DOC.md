@@ -219,3 +219,19 @@ Demais regras:
 - Assim que o administrador cadastrar um funcionário, este receberá um **e-mail de confirmação** contendo seus dados.
 - A consulta dos dados dos advogados virá de uma **API externa**.
 - Todo o histórico (salas, computadores, advogados, impressões e funcionários) precisa estar **paginado**, com **10 itens por página**.
+- As rotas públicas precisam ter **limite de requisições** (rate limit) por IP, para que ninguém consiga forçar senha, disparar e-mails em massa, sobrecarregar a API do Protheus ou encher o storage de arquivos:
+
+  | Rota | Teto | Janela | Conta por |
+  | --- | --- | --- | --- |
+  | Qualquer rota (teto global) | 300 | 1 min | IP |
+  | Rota inexistente | 60 | 1 min | IP |
+  | `POST /employees/session/auth` | 5 | 10 min | IP + CPF |
+  | `POST /employees/password-recovery` | 5 | 15 min | IP |
+  | `POST /employees/reset-password` | 10 | 10 min | IP |
+  | `POST /lawyers/release-computer` | 10 | 1 min | IP + macCode |
+  | `POST /lawyers/close-computer/:sessionId` | 30 | 1 min | IP |
+  | `POST /printers/send-to-print/:macCode` | 15 | 5 min | IP + macCode |
+
+  Ao estourar o teto, a API responde `429` com `{ message, retryAfterInSeconds }` e os headers `retry-after` / `x-ratelimit-*`. **O app desktop e o front devem tratar o `429` lendo `retryAfterInSeconds`** e aguardar esse tempo, em vez de retentar em laço. `/health` e `/docs` são isentos.
+
+  > A contagem só funciona por cliente se `TRUST_PROXY` estiver correto em produção — ver [`docs/DEPLOY.md`](./DEPLOY.md).

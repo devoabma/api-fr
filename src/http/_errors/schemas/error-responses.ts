@@ -18,3 +18,15 @@ export const badRequestSchema = z.object({
     )
     .optional(),
 })
+
+/**
+ * Resposta padrão de erro 429 (rate limit).
+ *
+ * Acompanha os headers `retry-after` e `x-ratelimit-*` enviados pelo
+ * @fastify/rate-limit. O corpo repete o tempo de espera em segundos para
+ * o cliente (app desktop / front) conseguir exibir a contagem sem ler headers.
+ */
+export const tooManyRequestsSchema = z.object({
+  message: z.string(),
+  retryAfterInSeconds: z.number(),
+})

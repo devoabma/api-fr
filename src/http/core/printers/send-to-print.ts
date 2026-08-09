@@ -3,6 +3,8 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
 import { NotFoundError } from '@/http/_errors/not-found'
+import { tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
+import { rateLimits } from '@/http/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { supabase } from '@/lib/supabase'
 import { formattedCodeMac } from '@/utils'
@@ -56,6 +58,7 @@ const sendToPrintSchema = {
     413: z.object({
       message: z.string(),
     }),
+    429: tooManyRequestsSchema,
   },
 } satisfies FastifySchema
 
@@ -64,6 +67,7 @@ export async function sendToPrint(app: FastifyInstance) {
     '/send-to-print/:macCode',
     {
       schema: sendToPrintSchema,
+      config: { rateLimit: rateLimits.sendToPrint },
     },
     async (request, reply) => {
       const { macCode } = request.params

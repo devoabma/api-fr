@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import { hasZodFastifySchemaValidationErrors } from 'fastify-type-provider-zod'
 import { BadRequestError } from './bad-request'
 import { NotFoundError } from './not-found'
+import { TooManyRequestsError } from './too-many-requests'
 import { UnauthorizedError } from './unauthorized'
 
 type FastifyErrorHandler = FastifyInstance['errorHandler']
@@ -34,6 +35,13 @@ export const errorHandler: FastifyErrorHandler = (error, _request, reply) => {
   if (error instanceof UnauthorizedError) {
     return reply.status(401).send({
       message: error.message,
+    })
+  }
+
+  if (error instanceof TooManyRequestsError) {
+    return reply.status(429).send({
+      message: error.message,
+      retryAfterInSeconds: error.retryAfterInSeconds,
     })
   }
 

@@ -3,6 +3,8 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
 import { NotFoundError } from '@/http/_errors/not-found'
+import { tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
+import { rateLimits } from '@/http/rate-limit'
 import { API_PROTHEUS_DATA } from '@/lib/axios'
 import { dayjs } from '@/lib/dayjs'
 import { prisma } from '@/lib/prisma'
@@ -31,6 +33,7 @@ const releaseComputerSchema = {
     404: z.object({
       message: z.string(),
     }),
+    429: tooManyRequestsSchema,
   },
 } satisfies FastifySchema
 
@@ -39,6 +42,7 @@ export async function releaseComputer(app: FastifyInstance) {
     '/release-computer',
     {
       schema: releaseComputerSchema,
+      config: { rateLimit: rateLimits.releaseComputer },
     },
     async (request, reply) => {
       const { cpf, oab, birth, macCode } = request.body

@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import z from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
+import { tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
+import { rateLimits } from '@/http/rate-limit'
 import { dayjs } from '@/lib/dayjs'
 import { prisma } from '@/lib/prisma'
 import { getDailyQuota } from './helpers/daily-quota'
@@ -23,6 +25,7 @@ const closeSessionSchema = {
     404: z.object({
       message: z.string(),
     }),
+    429: tooManyRequestsSchema,
   },
 } satisfies FastifySchema
 
@@ -31,6 +34,7 @@ export async function closeSession(app: FastifyInstance) {
     '/close-computer/:sessionId',
     {
       schema: closeSessionSchema,
+      config: { rateLimit: rateLimits.closeSession },
     },
     async (request, reply) => {
       const { sessionId } = request.params

@@ -4,8 +4,9 @@ import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
-import { badRequestSchema } from '@/http/_errors/schemas/error-responses'
+import { badRequestSchema, tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
 import { env } from '@/http/env'
+import { rateLimits } from '@/http/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { resend } from '@/lib/resend'
 import SendConfirmationChangedPassword from '@/utils/emails/sendConfirmationChangedPassword'
@@ -28,6 +29,7 @@ const resetPasswordSchema = {
       message: z.string(),
     }),
     400: badRequestSchema,
+    429: tooManyRequestsSchema,
   },
 } satisfies FastifySchema
 
@@ -36,6 +38,7 @@ export async function resetPassword(app: FastifyInstance) {
     '/reset-password',
     {
       schema: resetPasswordSchema,
+      config: { rateLimit: rateLimits.resetPassword },
     },
     async (request, reply) => {
       const { code, password } = request.body

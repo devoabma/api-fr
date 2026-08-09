@@ -2,24 +2,34 @@ import { fastifyCookie } from '@fastify/cookie'
 import { fastifyCors } from '@fastify/cors'
 import { fastifyJwt } from '@fastify/jwt'
 import { fastifyMultipart } from '@fastify/multipart'
+import { fastifyRateLimit } from '@fastify/rate-limit'
 import { fastifySwagger } from '@fastify/swagger'
 import ScalarApiReference from '@scalar/fastify-api-reference'
 import { fastify } from 'fastify'
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod'
 import { errorHandler } from './_errors'
 import { env } from './env'
+import { globalRateLimit } from './rate-limit'
 import { appRoutes } from './routes'
 
-export const app = fastify().withTypeProvider<ZodTypeProvider>()
+export const app = fastify({
+  // Sem isso, atrás de um proxy reverso todas as requisições chegam com o IP do proxy
+  // e o rate limit por IP viraria um limite único compartilhado por todos os clientes.
+  trustProxy: env.TRUST_PROXY,
+}).withTypeProvider<ZodTypeProvider>()
 
 app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
 
 app.setErrorHandler(errorHandler)
-app.setNotFoundHandler((request, reply) => {
-  return reply.status(404).send({
-    message: 'Rota não encontrada.',
-    route: request.url,
+
+// Registrado antes das rotas: o plugin instala um hook em cada rota declarada depois dele.
+app.register(fastifyRateLimit, globalRateLimit).after(() => {
+  app.setNotFoundHandler({ preHandler: app.rateLimit({ max: 60, timeWindow: '1 minute' }) }, (request, reply) => {
+    return reply.status(404).send({
+      message: 'Rota não encontrada.',
+      route: request.url,
+    })
   })
 })
 

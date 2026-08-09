@@ -37,6 +37,8 @@ async function closeSession(sessionId: string, computerId: string, lawyerId: str
       data: { remainingTime: 0, lastAccess: now },
     }),
   ])
+
+  // TODO: Lançamento do WebSocket para notificar o Desktop Client
 }
 
 async function checkExpiredSessions() {

@@ -16,9 +16,37 @@ const timezoneSchema = z.string().refine(
   { message: 'Fuso horário inválido, use um identificador IANA (ex: America/Fortaleza)' }
 )
 
+/**
+ * Define se o Fastify pode confiar no header `x-forwarded-for` para descobrir o IP real
+ * do cliente. É o que faz o rate limit contar por usuário, e não por proxy.
+ *
+ * - `false` (padrão): API exposta direto, usa o IP da conexão TCP.
+ * - `true`: confia em qualquer proxy. NUNCA use se a porta da API estiver acessível
+ *   publicamente, pois qualquer um forja o header e escapa do limite.
+ * - `1`, `2`, ...: número de proxies na frente da API (mais seguro que `true`).
+ * - `10.0.0.0/8,172.18.0.0/16`: lista de IPs/CIDRs confiáveis (mais seguro ainda).
+ */
+const trustProxySchema = z
+  .string()
+  .default('false')
+  .transform(value => {
+    if (value === 'true') {
+      return true
+    }
+
+    if (value === 'false') {
+      return false
+    }
+
+    const hops = Number(value)
+
+    return Number.isInteger(hops) && hops > 0 ? hops : value
+  })
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['dev', 'production']).default('dev'),
   API_PORT: z.coerce.number().default(25600),
+  TRUST_PROXY: trustProxySchema,
   TIMEZONE: timezoneSchema.default('America/Fortaleza'),
   WEB_URL: z.string().default('http://localhost:3000'),
   DOMAIN_URL: z.string().default('localhost'),

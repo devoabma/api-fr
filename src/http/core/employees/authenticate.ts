@@ -2,9 +2,10 @@ import { compare } from 'bcryptjs'
 import type { FastifyInstance, FastifySchema } from 'fastify'
 import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
-import { badRequestSchema } from '@/http/_errors/schemas/error-responses'
+import { badRequestSchema, tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
 import { UnauthorizedError } from '@/http/_errors/unauthorized'
 import { env } from '@/http/env'
+import { rateLimits } from '@/http/rate-limit'
 import { prisma } from '@/lib/prisma'
 import { cpfSchema } from '@/utils/validations/cpf'
 
@@ -20,6 +21,7 @@ const authenticateSchema = {
       token: z.string(),
     }),
     400: badRequestSchema,
+    429: tooManyRequestsSchema,
   },
 } satisfies FastifySchema
 
@@ -28,6 +30,7 @@ export async function authenticate(app: FastifyInstance) {
     '/session/auth',
     {
       schema: authenticateSchema,
+      config: { rateLimit: rateLimits.authenticate },
     },
     async (request, reply) => {
       const { cpf, password } = request.body

@@ -94,9 +94,9 @@ variável deve ficar marcada só como **"Available at Runtime"**, com
 > Corrigido desmarcando o toggle pra cada variável.
 
 Variáveis necessárias (mesmas do `.env.example`, com valores de produção):
-`NODE_ENV`, `API_PORT`, `TIMEZONE`, `WEB_URL`, `DOMAIN_URL`, `TOKEN_COOKIE_NAME`,
-`CPF_ADMIN`, `PASSWORD_ADMIN`, `EMAIL_ADMIN`, `DATABASE_URL`,
-`RESEND_API_KEY`, `JWT_SECRET`, `PUBLIC_SUPABASE_URL`,
+`NODE_ENV`, `API_PORT`, `TIMEZONE`, `TRUST_PROXY`, `WEB_URL`, `DOMAIN_URL`,
+`TOKEN_COOKIE_NAME`, `CPF_ADMIN`, `PASSWORD_ADMIN`, `EMAIL_ADMIN`,
+`DATABASE_URL`, `RESEND_API_KEY`, `JWT_SECRET`, `PUBLIC_SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `API_PROTHEUS_DATA_URL`.
 
 `TIMEZONE` é o fuso da seccional (IANA, ex: `America/Fortaleza`). Ele governa o
@@ -106,6 +106,66 @@ valor inválido, a API não sobe (falha no boot em vez de errar horário calado)
 
 `DATABASE_URL` aponta pra um Postgres externo (Neon), então não depende de
 rede interna do Docker — funciona igual em dev e em produção.
+
+### `TRUST_PROXY` — o valor muda entre dev e produção
+
+**Em produção precisa ser `loopback,uniquelocal`.** É a única variável cujo
+valor local (`false`) está errado aqui, e o erro é silencioso: não quebra o
+boot, não gera log — só faz o rate limit contar todo mundo junto.
+
+O motivo é a arquitetura do topo deste documento. Quem abre a conexão TCP com o
+container é sempre o **Traefik**, no mesmo IP da rede interna do Docker. O IP
+real do cliente vem no header `X-Forwarded-For`, que é uma **lista** onde cada
+proxy anexa à direita quem falou com ele:
+
+```
+X-Forwarded-For: 203.0.113.50, 172.18.0.9
+                 └─ cliente     └─ cloudflared
+                    (posto pela Cloudflare)
+```
+
+O que cada valor faz, com essa cadeia (`req.ip` que o rate limit enxerga):
+
+| `TRUST_PROXY` | Normal | Se o cliente forjar o header | Veredito |
+| --- | --- | --- | --- |
+| `false` | `172.18.0.9` (Traefik) | `172.18.0.9` | ❌ todos no mesmo balde |
+| `true` | `203.0.113.50` | **`8.8.8.8`** | ❌ spoofável |
+| `1` | `172.18.0.9` | `172.18.0.9` | ❌ hop errado |
+| `2` | `203.0.113.50` | `203.0.113.50` | ⚠️ funciona, mas frágil |
+| `loopback,uniquelocal` | `203.0.113.50` | `203.0.113.50` | ✅ |
+
+- **`false`** ignora o header: toda requisição do planeta chega com o IP do
+  Traefik. O teto global de 300/min vira 300/min para a API inteira, e
+  `password-recovery` vira 5 pedidos a cada 15 min **no total**. Pior: qualquer
+  um de fora derruba o acesso de todos gastando o balde compartilhado.
+- **`true`** confia na lista inteira e pega o item mais à esquerda — justamente
+  a parte que o cliente escreve. A Cloudflare **não apaga** o que o cliente
+  mandou, ela anexa o IP real depois (`8.8.8.8, 203.0.113.50, 172.18.0.9`).
+  Trocando o header a cada requisição, o atacante ganha um balde novo sempre.
+- **`2`** conta hops da direita pra esquerda e acerta hoje, mas quebra calado no
+  dia em que entrar ou sair um proxy do caminho.
+- **`loopback,uniquelocal`** lê da direita pra esquerda descartando faixas
+  privadas (`10.x`, `172.16-31.x`, `192.168.x`, `127.x`) e para no primeiro IP
+  público — o real. A mentira do cliente fica à esquerda e é ignorada, e o
+  valor não depende de contar hops.
+
+Em desenvolvimento fica `false`: sem proxy na frente, o IP da conexão já é o
+verdadeiro. Efeito colateral local: tudo vem de `127.0.0.1`, então front,
+Insomnia e app desktop dividem o mesmo balde (reiniciar a API zera os
+contadores — o store é em memória).
+
+> Como conferir no primeiro deploy: a tabela acima assume o comportamento
+> padrão do cloudflared. Para validar com tráfego real, estoure de propósito um
+> limite barato (ex.: 61 chamadas em rotas inexistentes, teto de 60/min) de duas
+> redes diferentes — celular no 4G e máquina na rede da OAB. Se as duas caírem
+> no `429` juntas, o IP não está chegando e o `TRUST_PROXY` precisa de ajuste.
+> Se cada uma tiver seu próprio contador, está correto.
+>
+> Plano B, se o `X-Forwarded-For` não trouxer o IP público: a Cloudflare também
+> manda `CF-Connecting-IP`, com o IP do cliente puro, sem lista. Nesse caso o
+> ajuste é no `ipKey()` de `src/http/rate-limit.ts`. Só é seguro porque a origem
+> não é acessível fora do túnel — se alguém alcançasse o container direto, esse
+> header seria forjável.
 
 ### Health check
 
@@ -165,3 +225,4 @@ application routes**:
 | `Cannot find module '@/...'` no seed | `src/` ou `tsconfig.json` faltando na imagem de runtime. |
 | Domínio público cai na tela do Coolify em vez da API | Rota do Cloudflare Tunnel apontando pra porta `8000` em vez de `80`. |
 | Secrets aparecem em texto puro no log de build do Coolify | Variável marcada como "Available at Buildtime" — desmarcar, deixar só "Available at Runtime". |
+| Usuários tomando `429` sem motivo / login e recuperação de senha bloqueados pra todo mundo ao mesmo tempo | `TRUST_PROXY` em `false` (ou ausente) em produção: o rate limit está contando todos os clientes como um IP só. Ver seção acima. |
