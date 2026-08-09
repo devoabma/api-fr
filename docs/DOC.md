@@ -235,3 +235,42 @@ Demais regras:
   Ao estourar o teto, a API responde `429` com `{ message, retryAfterInSeconds }` e os headers `retry-after` / `x-ratelimit-*`. **O app desktop e o front devem tratar o `429` lendo `retryAfterInSeconds`** e aguardar esse tempo, em vez de retentar em laço. `/health` e `/docs` são isentos.
 
   > A contagem só funciona por cliente se `TRUST_PROXY` estiver correto em produção — ver [`docs/DEPLOY.md`](./DEPLOY.md).
+
+- A API mantém um **canal WebSocket permanente** com os Desktops das salas, na mesma aplicação e na mesma porta: `ws://<host>:<porta>/ws/computers`. É por ele que os eventos que nascem fora da máquina (sessão encerrada pelo cron, computador colocado em manutenção, sala inativada) vão chegar ao Desktop, sem polling.
+
+  **O que o Desktop precisa fazer hoje** (só a identificação existe; nenhum evento de negócio trafega ainda):
+
+  1. Conectar assim que o aplicativo iniciar — a conexão é permanente, não se abre só na liberação.
+  2. Enviar, logo após conectar, a identificação (prazo de **10 segundos**, senão a API encerra com `4408`):
+
+     ```json
+     { "type": "register", "macCode": "AA-BB-CC-DD-EE-01" }
+     ```
+
+  3. Aguardar a confirmação da API:
+
+     ```json
+     { "type": "registered", "macCode": "AA-BB-CC-DD-EE-01", "connectedAt": "2026-08-09T18:00:00.000Z" }
+     ```
+
+  4. Tratar o erro, que **não fecha a conexão** — corrigir a mensagem e reenviar:
+
+     ```json
+     { "type": "error", "code": "invalid_mac_code", "message": "Mac Code inválido. Padrão de 17 caracteres." }
+     ```
+
+     Códigos possíveis: `invalid_payload`, `unknown_message_type`, `invalid_mac_code`, `already_registered`, `internal_error`.
+
+  5. Reconectar conforme o **close code**, e não sempre da mesma forma:
+
+     | Código | Significado | O que o Desktop faz |
+     | --- | --- | --- |
+     | `4408` | não se identificou a tempo | corrigir o cliente — reconectar não resolve |
+     | `4409` | outra conexão assumiu este `macCode` | **não** reconectar em laço; esta instância foi substituída |
+     | `4401` | reservado para autenticação da estação | reconectar só depois de obter credencial válida |
+     | `4503` | API reiniciando | reconectar com backoff |
+     | demais | queda de rede | reconectar com backoff |
+
+  Observações que evitam retrabalho: o `macCode` é normalizado pela API para `AA-BB-CC-DD-EE-01` (maiúsculas, 17 caracteres) — enviar com ou sem hífen dá no mesmo, mas o valor precisa ser o mesmo MAC cadastrado em `computers`. Toda mensagem é um JSON com o campo `type`, e frames maiores que 4KB são recusados. A API envia `ping` de controle a cada 30s: a pilha WebSocket do .NET responde sozinha, nada a implementar — mas uma estação que parar de responder é considerada offline e removida.
+
+  > ⚠️ **O canal ainda não é autenticado.** O `macCode` é uma afirmação do cliente: qualquer processo que alcance a porta se declara qualquer computador, e CORS não protege WebSocket. Enquanto a credencial de estação não existir, nada sensível trafega por aqui.

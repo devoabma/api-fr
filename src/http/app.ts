@@ -11,6 +11,7 @@ import { errorHandler } from './_errors'
 import { env } from './env'
 import { globalRateLimit } from './rate-limit'
 import { appRoutes } from './routes'
+import { websocketPlugin } from './websocket'
 
 export const app = fastify({
   // Sem isso, atrás de um proxy reverso todas as requisições chegam com o IP do proxy
@@ -81,5 +82,8 @@ app.register(fastifyMultipart, {
     fileSize: 5 * 1024 * 1024, // 5mb
   },
 })
+
+// Canal permanente com os Desktops das salas — mesma aplicação, mesma porta.
+app.register(websocketPlugin)
 
 app.register(appRoutes)
