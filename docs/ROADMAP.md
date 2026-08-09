@@ -90,7 +90,7 @@
 ## 4. Advogados (Lawyers) e Sessões
 
 ### Casos de uso (RF)
-- [x] Solicitar uso de computador em uma sala (abre sessão) (`release-computer.ts` — `POST /lawyers/release-computer`; pública, autenticação por CPF/OAB/nascimento)
+- [x] Solicitar uso de computador em uma sala (abre sessão) (`release-computer.ts` — `POST /lawyers/release-computer`; pública, autenticação por CPF/OAB/nascimento; o `200` devolve `lawyerName`, `remainingTime` e `expiresAt` (ISO 8601 UTC) — `remainingTime: 0` + `expiresAt: null` distinguem o encerramento de sessão estourada da liberação concedida)
 - [x] Cron job que encerra sessões expiradas e libera o computador (`src/http/jobs/auto-close-sessions.cron.ts`; `node-cron` in-process a cada 1min com `noOverlap`, update condicional evita corrida com `close-computer`/`release-computer`)
 - [x] Cancelar sessão (guardando o tempo restante) (`close-session.ts` — `POST /lawyers/close-computer/:sessionId`)
 - [x] Continuar sessão de onde parou (apenas no mesmo dia) (cota diária global via `getDailyQuota` — soma sessões finalizadas no dia em qualquer sala)

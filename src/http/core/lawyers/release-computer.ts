@@ -27,6 +27,18 @@ const releaseComputerSchema = {
     200: z.object({
       message: z.string(),
       sessionId: z.cuid2(),
+      lawyerName: z.string(),
+      remainingTime: z.number().int().nonnegative(),
+      /**
+       * Instante em que o servidor vai encerrar esta sessão, em UTC (sufixo `Z`).
+       *
+       * É o mesmo limite que o job auto-close-sessions aplica (`startedAt + remainingTime`),
+       * publicado aqui para o Desktop desenhar a contagem a partir de um instante absoluto
+       * em vez de somar minutos no relógio local — que pode estar errado ou suspender.
+       *
+       * `null` quando a resposta não abre sessão nova (cota do dia já consumida).
+       */
+      expiresAt: z.iso.datetime().nullable(),
     }),
     400: z.object({
       message: z.string(),
@@ -241,6 +253,11 @@ export async function releaseComputer(app: FastifyInstance) {
           return reply.status(200).send({
             message: 'Sessão encerrada devido ao tempo limite atingido. Por favor, tente novamente amanhã.',
             sessionId: activeSession.id,
+            lawyerName: lawyer.name,
+            // 200 com saldo zerado NÃO é liberação: é o encerramento da sessão que estourou
+            // o tempo. É por este campo que o Desktop distingue os dois casos.
+            remainingTime: 0,
+            expiresAt: null,
           })
         } else {
           const remainingTime = remainingMinutes - differenceInMinutes
@@ -294,6 +311,10 @@ export async function releaseComputer(app: FastifyInstance) {
       return reply.status(200).send({
         message: 'Computador liberado com sucesso.',
         sessionId: computerSession.id,
+        lawyerName: lawyer.name,
+        remainingTime: remainingMinutes,
+        // Mesma conta do auto-close-sessions, para as duas pontas expirarem no mesmo instante.
+        expiresAt: dayjs(startedAt).add(remainingMinutes, 'minute').toISOString(),
       })
     }
   )
