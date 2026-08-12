@@ -1,23 +1,35 @@
-# Deploy — Coolify + Cloudflare Tunnel
+# Deploy — Coolify + Nginx Proxy Manager
 
-> Runbook de como a API vai pro ar em produção. Servidor Coolify roda localmente
-> (`192.168.1.4`) e é exposto ao público via Cloudflare Tunnel no domínio `hit.dev.br`.
+> Runbook de como a API vai pro ar em produção. Servidor Coolify roda na rede
+> interna da OAB (`192.168.1.49`) e é exposto ao público no domínio
+> `api-fr.oabma.org.br`, com DNS na Locaweb e TLS terminado no Nginx Proxy
+> Manager.
 
 ---
 
 ## Arquitetura
 
 ```
-Internet → Cloudflare (TLS) → cloudflared (túnel local)
-         → coolify-proxy (Traefik, host 192.168.1.4:80/443)
-         → container da API (rede interna "coolify", porta 3333)
+Internet → DNS Locaweb (A: api-fr.oabma.org.br → 177.54.133.139)
+         → NAT do roteador (80/443)
+         → Nginx Proxy Manager (host 192.168.1.49:80/443, TLS Let's Encrypt)
+         → host 192.168.1.49:3333 (porta publicada pelo container)
+         → container da API (porta 3333)
 ```
 
-- **Traefik** (`coolify-proxy`) é quem faz o roteamento por `Host` header entre as
-  aplicações do Coolify — não expõe cada app numa porta própria do host.
-- O dashboard do Coolify (`coolify.hit.dev.br`) é exceção: roda com porta própria
-  mapeada (`8000:8080`), fora do Traefik.
-- `api-fr.hit.dev.br` (assim como `n8n`, `crm`, `supabase`) passa pelo Traefik.
+- **Quem termina o TLS e roteia por `Host` header é o Nginx Proxy Manager**
+  (`nginx.oabma.org.br:81` é o painel dele). Ele ocupa as portas `80`/`443` do
+  host.
+- **O Traefik do Coolify não participa deste caminho.** Como o NPM já tomou as
+  portas `80`/`443`, os labels Traefik que o Coolify gera para a aplicação são
+  inertes. Por isso a API **precisa publicar a porta no host** (`Port Mappings`)
+  — é assim que o NPM alcança o container. Ver a seção de configuração abaixo.
+- O dashboard do Coolify (`coolify.oabma.org.br`) roda com porta própria mapeada
+  (`8000:8080`) e também é publicado via NPM.
+
+> Arquitetura anterior (Cloudflare Tunnel → Traefik → rede interna `coolify`,
+> em `hit.dev.br`) foi substituída. Se voltar a usar o Traefik, `Port Mappings`
+> volta a ser vazio — as duas coisas são mutuamente exclusivas.
 
 ---
 
@@ -71,12 +83,30 @@ migrations pendentes) e o seed do admin é idempotente por guard
 
 1. **Resource** → repositório `devoabma/api-fr`, branch `main`.
 2. **Build Pack**: `Dockerfile` (não Nixpacks).
-3. **Ports Exposes**: `3333` (bate com `EXPOSE 3333` do Dockerfile e com o
-   label do Traefik `loadbalancer.server.port=3333`).
-4. **Port Mappings**: vazio — não precisa, o Traefik acessa via rede Docker
-   interna (`caddy_ingress_network=coolify` / labels Traefik nas configs do
-   app), não por porta publicada no host.
-5. **Domains**: `http://api-fr.hit.dev.br`.
+3. **Ports Exposes**: `3333` (bate com `EXPOSE 3333` do Dockerfile).
+4. **Port Mappings**: `3333:3333` — **obrigatório nesta arquitetura**. Sem isso
+   o container fica só na rede Docker interna `coolify`, nada escuta em
+   `192.168.1.49:3333` e o NPM devolve `504 Gateway Time-out`. Ver a armadilha
+   abaixo.
+5. **Domains**: pode ficar com o `sslip.io` gerado ou vazio — quem publica o
+   domínio é o NPM, não o Traefik do Coolify.
+
+> ⚠️ **`Port Mappings` vazio + NPM = 504.** É a armadilha mais cara desta
+> configuração porque *tudo* parece certo: build passa, container fica
+> `Running (healthy)`, o log mostra `Servidor iniciado com sucesso!`. O
+> healthcheck do Dockerfile roda **dentro** do container (`localhost:3333`), então
+> ele fica verde mesmo com a porta não publicada — o healthcheck verde não prova
+> que alguém de fora alcança a API.
+>
+> Como confirmar em 5 segundos, de qualquer máquina da rede:
+>
+> ```sh
+> curl -sI -m 5 http://192.168.1.49:3333/health   # tem que responder 200
+> ```
+>
+> Se der timeout com o container `healthy`, é `Port Mappings`. Depois de
+> preencher, use **Redeploy** e não `Restart`: publicar porta exige recriar o
+> container.
 
 ### Environment Variables — Buildtime vs Runtime
 
@@ -105,8 +135,65 @@ cálculo de tempo das sessões e o horário dos jobs agendados — não o fuso d
 servidor. Se não for definido, cai no default `America/Fortaleza`; se vier um
 valor inválido, a API não sobe (falha no boot em vez de errar horário calado).
 
-`DATABASE_URL` aponta pra um Postgres externo (Neon), então não depende de
-rede interna do Docker — funciona igual em dev e em produção.
+`DATABASE_URL` aponta pra um Postgres externo, então não depende de rede
+interna do Docker — funciona igual em dev e em produção.
+
+### `$` em variável de ambiente é engolido pelo Docker Compose
+
+O Coolify grava as variáveis num `.env` e sobe a stack com `docker compose`, que
+**interpola `$`**. Um valor com cifrão é lido como referência a outra variável,
+não como texto:
+
+```
+PASSWORD_ADMIN=@#$oabMA2k26
+                 └────────┘ Compose procura a variável "oabMA2k26",
+                            não encontra, substitui por string vazia
+
+container recebe:  PASSWORD_ADMIN=@#
+```
+
+**A correção é duplicar o cifrão** — `$$` produz um `$` literal:
+
+```
+PASSWORD_ADMIN=@#$$oabMA2k26
+```
+
+Vale para qualquer variável: senhas, `JWT_SECRET`, a senha dentro do
+`DATABASE_URL`, chaves de API.
+
+O que torna isso perigoso é que **nada falha**. Não há erro de boot, o container
+sobe saudável e a API funciona — só que com o valor errado. O único vestígio fica
+no log do deploy, uma linha fácil de perder no meio do build:
+
+```
+level=warning msg="The \"oabMA2k26\" variable is not set. Defaulting to a blank string."
+```
+
+Sempre que aparecer `variable is not set. Defaulting to a blank string` com um
+pedaço reconhecível de um segredo seu, é este bug.
+
+> **Caso real (12/ago/2026):** o `PASSWORD_ADMIN` do primeiro deploy em
+> `oabma.org.br` chegou no container como `@#`. O seed gerou o hash bcrypt de
+> `@#`, o e-mail de boas-vindas imprimiu `@#`, e o login com a senha "real"
+> retornava credenciais inválidas — corretamente, porque essa senha nunca
+> existiu no banco.
+
+#### Corrigir a env não conserta um admin já criado
+
+O seed é idempotente por e-mail ([`prisma/seed.ts`](../prisma/seed.ts)): se já
+existe alguém com o `EMAIL_ADMIN`, ele imprime `> Administrador já cadastrado.
+Nenhuma ação necessária.` e **ignora o novo valor de `PASSWORD_ADMIN`**. Redeploy
+sozinho não troca senha nenhuma.
+
+Duas saídas, depois de corrigir a variável:
+
+| Saída | Como | Quando |
+| --- | --- | --- |
+| Trocar pela API | Autenticar com a senha truncada (o valor que chegou de fato) e chamar `PATCH /change-password` | ambiente com dados; não toca no banco |
+| Re-seedar | Apagar a linha do admin em `employees` e dar **Redeploy** | ambiente ainda vazio; reenvia o e-mail com a senha certa |
+
+No caminho do re-seed, corrija a variável **antes** de apagar o registro — senão
+o seed recria o admin com o mesmo valor truncado.
 
 ### `ALLOW_DEFAULTING_LAWYERS` — liberação geral por determinação da OAB
 
@@ -145,34 +232,36 @@ valor local (`false`) está errado aqui, e o erro é silencioso: não quebra o
 boot, não gera log — só faz o rate limit contar todo mundo junto.
 
 O motivo é a arquitetura do topo deste documento. Quem abre a conexão TCP com o
-container é sempre o **Traefik**, no mesmo IP da rede interna do Docker. O IP
-real do cliente vem no header `X-Forwarded-For`, que é uma **lista** onde cada
-proxy anexa à direita quem falou com ele:
+container é sempre o **Nginx Proxy Manager**, num IP privado. O IP real do
+cliente vem no header `X-Forwarded-For`, que é uma **lista** onde cada proxy
+anexa à direita quem falou com ele:
 
 ```
 X-Forwarded-For: 203.0.113.50, 172.18.0.9
-                 └─ cliente     └─ cloudflared
-                    (posto pela Cloudflare)
+                 └─ cliente     └─ NPM
+                    (posto pelo NPM via
+                     $proxy_add_x_forwarded_for)
 ```
 
 O que cada valor faz, com essa cadeia (`req.ip` que o rate limit enxerga):
 
 | `TRUST_PROXY` | Normal | Se o cliente forjar o header | Veredito |
 | --- | --- | --- | --- |
-| `false` | `172.18.0.9` (Traefik) | `172.18.0.9` | ❌ todos no mesmo balde |
+| `false` | `172.18.0.9` (NPM) | `172.18.0.9` | ❌ todos no mesmo balde |
 | `true` | `203.0.113.50` | **`8.8.8.8`** | ❌ spoofável |
 | `1` | `172.18.0.9` | `172.18.0.9` | ❌ hop errado |
 | `2` | `203.0.113.50` | `203.0.113.50` | ⚠️ funciona, mas frágil |
 | `loopback,uniquelocal` | `203.0.113.50` | `203.0.113.50` | ✅ |
 
 - **`false`** ignora o header: toda requisição do planeta chega com o IP do
-  Traefik. O teto global de 300/min vira 300/min para a API inteira, e
+  NPM. O teto global de 300/min vira 300/min para a API inteira, e
   `password-recovery` vira 5 pedidos a cada 15 min **no total**. Pior: qualquer
   um de fora derruba o acesso de todos gastando o balde compartilhado.
 - **`true`** confia na lista inteira e pega o item mais à esquerda — justamente
-  a parte que o cliente escreve. A Cloudflare **não apaga** o que o cliente
-  mandou, ela anexa o IP real depois (`8.8.8.8, 203.0.113.50, 172.18.0.9`).
-  Trocando o header a cada requisição, o atacante ganha um balde novo sempre.
+  a parte que o cliente escreve. O `$proxy_add_x_forwarded_for` do Nginx **não
+  apaga** o que o cliente mandou, ele anexa o IP real depois
+  (`8.8.8.8, 203.0.113.50, 172.18.0.9`). Trocando o header a cada requisição, o
+  atacante ganha um balde novo sempre.
 - **`2`** conta hops da direita pra esquerda e acerta hoje, mas quebra calado no
   dia em que entrar ou sair um proxy do caminho.
 - **`loopback,uniquelocal`** lê da direita pra esquerda descartando faixas
@@ -186,17 +275,21 @@ Insomnia e app desktop dividem o mesmo balde (reiniciar a API zera os
 contadores — o store é em memória).
 
 > Como conferir no primeiro deploy: a tabela acima assume o comportamento
-> padrão do cloudflared. Para validar com tráfego real, estoure de propósito um
+> padrão do Nginx. Para validar com tráfego real, estoure de propósito um
 > limite barato (ex.: 61 chamadas em rotas inexistentes, teto de 60/min) de duas
 > redes diferentes — celular no 4G e máquina na rede da OAB. Se as duas caírem
 > no `429` juntas, o IP não está chegando e o `TRUST_PROXY` precisa de ajuste.
 > Se cada uma tiver seu próprio contador, está correto.
->
-> Plano B, se o `X-Forwarded-For` não trouxer o IP público: a Cloudflare também
-> manda `CF-Connecting-IP`, com o IP do cliente puro, sem lista. Nesse caso o
-> ajuste é no `ipKey()` de `src/http/rate-limit.ts`. Só é seguro porque a origem
-> não é acessível fora do túnel — se alguém alcançasse o container direto, esse
-> header seria forjável.
+
+> ⚠️ **A porta `3333` publicada no host enfraquece isso dentro da LAN.** Como o
+> `Port Mappings` expõe a API em `192.168.1.49:3333`, quem já está na rede
+> interna pode falar direto com o container, pulando o NPM, e forjar um
+> `X-Forwarded-For` com IP público — que o `loopback,uniquelocal` vai aceitar.
+> Contra a internet a proteção continua válida (o NAT só encaminha `80`/`443`),
+> mas o rate limit não é uma defesa confiável contra quem está na rede da OAB.
+> Se isso passar a importar, a saída é tirar a porta do host e colocar o
+> container do NPM na rede Docker `coolify`, apontando o forward para o nome do
+> serviço em vez de `192.168.1.49`.
 
 ### Health check
 
@@ -206,33 +299,74 @@ processo Node/Fastify está respondendo). O Dockerfile já define um
 na imagem):
 
 ```dockerfile
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=3 \
     CMD node -e "fetch('http://localhost:3333/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 ```
+
+O `start-period` é generoso de propósito: `migrate deploy` + seed rodam no
+entrypoint **antes** da porta 3333 abrir, e um período curto marcaria o
+container como `unhealthy` no meio de uma migration longa.
 
 Isso é o suficiente pro Coolify parar de mostrar `Running (unknown)` e passar
 a reportar `Healthy`/`Unhealthy` de verdade — não precisa configurar nada a
 mais na aba **Healthcheck** do Coolify, ele lê o `HEALTHCHECK` da imagem
 automaticamente.
 
+> ⚠️ **`Healthy` não significa "acessível".** O comando roda de dentro do
+> container, contra `localhost`. Ele fica verde mesmo se o `Port Mappings`
+> estiver vazio, se o NPM estiver mal configurado ou se o DNS não resolver.
+> Para saber se a API está de fato no ar, teste pelo domínio público.
+
 ---
 
-## Cloudflare Tunnel
+## DNS e Nginx Proxy Manager
 
-Rota publicada em **Networks → Tunnels & Mesh → coolify → Published
-application routes**:
+### DNS (Locaweb)
+
+Registro na zona de `oabma.org.br`:
+
+| Nome | Tipo | Valor |
+| --- | --- | --- |
+| `api-fr` | `A` | `177.54.133.139` (IP público da OAB) |
+
+O roteador precisa encaminhar `80` e `443` para `192.168.1.49`. A porta `80` não
+é opcional mesmo que só se use HTTPS: é por ela que o Let's Encrypt faz o
+desafio HTTP-01 na emissão e na renovação a cada 90 dias.
+
+### Proxy Host (`nginx.oabma.org.br:81`)
 
 | Campo | Valor |
 | --- | --- |
-| Hostname | `api-fr.hit.dev.br` |
-| Type | `HTTP` |
-| Service URL | `192.168.1.4:80` |
+| Domain Names | `api-fr.oabma.org.br` |
+| Scheme | `http` |
+| Forward Hostname / IP | `192.168.1.49` |
+| Forward Port | `3333` |
+| Websockets Support | **ligado** |
+| Block Common Exploits | ligado |
+| SSL | certificado Let's Encrypt + **Force SSL** |
 
-> ⚠️ **Não usar a porta `8000`** — essa é a porta do dashboard do Coolify
-> (`coolify` container, mapeado `8000:8080`), não do Traefik. Apontar a rota
-> pra `8000` faz o domínio da API cair na tela de login do Coolify. A porta
-> certa pra qualquer app hospedado no Coolify (roteado pelo Traefik) é `80`
-> (ou `443` se preferir HTTPS na origem).
+O `Websockets Support` é obrigatório: sem ele o Nginx não repassa o
+`Upgrade: websocket` e o canal permanente dos Desktops
+(`wss://api-fr.oabma.org.br/ws/computers`) nunca completa o handshake.
+
+O TLS termina no NPM e o tráfego segue em `http` na rede interna — por isso o
+`Scheme` é `http`, não `https`. Apontar `https` para a porta `3333` (que fala
+HTTP puro) resulta em erro de handshake.
+
+#### Timeout do WebSocket
+
+O padrão do Nginx é `proxy_read_timeout 60s`, e o heartbeat da API é um
+ping/pong a cada 30s — passa, mas com pouca folga: um atraso de rede derruba a
+conexão do Desktop. Na aba **Advanced** do proxy host:
+
+```nginx
+proxy_read_timeout 3600s;
+proxy_send_timeout 3600s;
+```
+
+> ⚠️ **Não apontar o forward para a porta `8000`** — essa é a porta do dashboard
+> do Coolify (`coolify` container, mapeado `8000:8080`). O domínio da API cairia
+> na tela de login do Coolify.
 
 ---
 
@@ -243,9 +377,15 @@ application routes**:
 - [ ] Acompanhar o log: build (se o commit mudou) → `docker-entrypoint.sh`
       (`No pending migrations` ou lista de migrations aplicadas + seed) →
       `Servidor iniciado com sucesso!`.
+- [ ] Procurar no log do deploy por `variable is not set. Defaulting to a blank
+      string` — se aparecer com um pedaço de algum segredo, é `$` não escapado
+      (ver seção acima). O deploy **não falha** por causa disso.
 - [ ] Conferir status do container: `Running`/`Healthy`, não `Restarting`.
-- [ ] Testar `https://api-fr.hit.dev.br/docs` (deve retornar `200` e abrir o
-      Scalar).
+- [ ] Testar de dentro da rede: `curl -sI http://192.168.1.49:3333/health` →
+      `200`. Prova que a porta está publicada.
+- [ ] Testar pelo domínio: `curl -s https://api-fr.oabma.org.br/health` →
+      `{"status":"ok"}`. Prova que NPM, DNS e TLS estão de pé.
+- [ ] Abrir `https://api-fr.oabma.org.br/docs` (Scalar).
 
 ## Troubleshooting
 
@@ -254,7 +394,12 @@ application routes**:
 | Container em `Restarting` em loop | Ver `docker logs <container>` — geralmente erro do `prisma migrate deploy`/`db seed` no entrypoint. |
 | `The datasource.url property is required...` | `prisma.config.ts` não está na imagem de runtime (ver seção Dockerfile acima). |
 | `Cannot find module '@/...'` no seed | `src/` ou `tsconfig.json` faltando na imagem de runtime. |
-| Domínio público cai na tela do Coolify em vez da API | Rota do Cloudflare Tunnel apontando pra porta `8000` em vez de `80`. |
+| Domínio público cai na tela do Coolify em vez da API | Proxy host do NPM apontando pra porta `8000` em vez de `3333`. |
+| `504 Gateway Time-out` com o container `Running (healthy)` | `Port Mappings` vazio no Coolify: nada escuta em `192.168.1.49:3333`. Preencher `3333:3333` e **Redeploy** (não `Restart`). Confirmar com `curl -sI http://192.168.1.49:3333/health`. |
+| Página "Congratulations! You've successfully started the Nginx Proxy Manager" | O `Host` da requisição não bateu com nenhum proxy host — domínio digitado diferente do cadastrado, ou o proxy host ainda não foi salvo. |
+| Senha do admin não funciona, mas o e-mail de boas-vindas chegou com ela truncada | `$` na variável interpolado pelo Docker Compose. Escapar com `$$` — e lembrar que o seed é idempotente, corrigir a variável não troca a senha de um admin já criado. Ver seção acima. |
+| Links dos e-mails apontando pra `localhost` | `WEB_URL` com o valor de desenvolvimento. É usada na montagem dos links de cadastro e recuperação de senha. |
+| Desktop conecta no WebSocket e cai sozinho depois de ~1 min | `Websockets Support` desligado no proxy host, ou `proxy_read_timeout` curto demais. Ver seção do NPM. |
 | Secrets aparecem em texto puro no log de build do Coolify | Variável marcada como "Available at Buildtime" — desmarcar, deixar só "Available at Runtime". |
 | Usuários tomando `429` sem motivo / login e recuperação de senha bloqueados pra todo mundo ao mesmo tempo | `TRUST_PROXY` em `false` (ou ausente) em produção: o rate limit está contando todos os clientes como um IP só. Ver seção acima. |
 | Determinação de liberação geral não pegou — inadimplente continua recebendo `400` | `ALLOW_DEFAULTING_LAWYERS` com valor diferente da string `true` (ex: `1`, `sim`), ou container não reiniciado depois de criar a variável. Confirmar o aviso vermelho nos logs do boot. |

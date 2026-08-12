@@ -22,7 +22,7 @@
 - [x] Rate limit por IP (`@fastify/rate-limit` — política em `src/http/rate-limit.ts`: teto global de 300 req/min, tetos apertados nas rotas públicas caras (login, recuperação/reset de senha, liberação de computador, impressão), `429` com `{ message, retryAfterInSeconds }`; `/health` e `/docs` isentos; IP real do cliente via `TRUST_PROXY`)
 - [x] Seed do usuário ADMIN master (`prisma/seed.ts` — cria o ADMIN a partir do `.env` quando ausente e envia e-mail de confirmação; idempotente via guard; rodar via `pnpm db:deploy` no release do deploy)
 - [x] Build de produção (`tsup.config.ts` — compila `src` para `build/` em ESM; `pnpm build` + `pnpm start` executam o artefato sem depender de `tsx`)
-- [x] Deploy em produção (Coolify + Cloudflare Tunnel — runbook completo em [`docs/DEPLOY.md`](./DEPLOY.md))
+- [x] Deploy em produção (Coolify + Nginx Proxy Manager em `api-fr.oabma.org.br` — runbook completo em [`docs/DEPLOY.md`](./DEPLOY.md))
 - [~] WebSocket com os Desktops das salas (`src/http/websocket/` — `@fastify/websocket` na mesma app e mesma porta, endpoint `ws://<host>:<porta>/ws/computers`)
   - [x] Infraestrutura: registro por `{ "type": "register", "macCode": "..." }`, mapa em memória `macCode → socket` (`connections.ts`), protocolo tipado por `type` com Zod (`protocol.ts`), heartbeat de ping/pong a cada 30s, limpeza na desconexão e no shutdown
   - [ ] Autenticação da estação (TOFU: token opaco no header `Authorization`, hoje o `macCode` é só uma afirmação do cliente — gancho pronto em `websocket/authorization.ts`)
