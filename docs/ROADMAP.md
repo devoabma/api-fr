@@ -26,7 +26,10 @@
 - [~] WebSocket com os Desktops das salas (`src/http/websocket/` — `@fastify/websocket` na mesma app e mesma porta, endpoint `ws://<host>:<porta>/ws/computers`)
   - [x] Infraestrutura: registro por `{ "type": "register", "macCode": "..." }`, mapa em memória `macCode → socket` (`connections.ts`), protocolo tipado por `type` com Zod (`protocol.ts`), heartbeat de ping/pong a cada 30s, limpeza na desconexão e no shutdown
   - [ ] Autenticação da estação (TOFU: token opaco no header `Authorization`, hoje o `macCode` é só uma afirmação do cliente — gancho pronto em `websocket/authorization.ts`)
-  - [ ] Eventos de negócio (`computer_released`, `session_started`, `session_finished`) e snapshot na reconexão
+  - [~] Eventos de negócio
+    - [x] `session_closed` (`websocket/notifications.ts` — disparado por `close-session.ts` com `reason: manual` e pelo cron `auto-close-sessions` com `reason: expired`; leva `macCode` e `sessionId` para o Desktop conferir antes de fechar a tela)
+    - [ ] `computer_released` / `session_started`
+  - [ ] Snapshot no `register` (hoje quem estava offline não fica sabendo do que perdeu — a rede de segurança é o relógio do próprio Desktop)
 
 ---
 

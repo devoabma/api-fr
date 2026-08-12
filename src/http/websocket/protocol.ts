@@ -62,9 +62,39 @@ const CLIENT_MESSAGE_TYPES = new Set<string>(clientMessageSchema.options.map(opt
 /*                            Servidor -> Cliente                             */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Por que a sessão terminou. O Desktop usa isso só para escolher o texto que mostra —
+ * a ação (fechar a tela e devolver a máquina à trava) é a mesma em todos os casos.
+ */
+export const SESSION_CLOSED_REASONS = {
+  /** Alguém chamou `POST /close-computer/:sessionId` — o painel web ou o próprio Desktop. */
+  MANUAL: 'manual',
+  /** A cota do dia acabou e o job `auto-close-sessions` fechou a sessão. */
+  EXPIRED: 'expired',
+} as const
+
+export type SessionClosedReason = (typeof SESSION_CLOSED_REASONS)[keyof typeof SESSION_CLOSED_REASONS]
+
 export type ServerMessage =
   | { type: 'registered'; macCode: string; connectedAt: string }
   | { type: 'error'; code: WsErrorCode; message: string }
+  | {
+      type: 'session_closed'
+      /**
+       * Destinatário pretendido, no formato normalizado (`AA-BB-CC-DD-EE-FF`).
+       *
+       * Redundante com o roteamento — a mensagem já sai pelo socket daquela estação — e é
+       * de propósito: o Desktop confere antes de fechar a tela, para que um engano de
+       * roteamento no servidor não derrube a sessão da máquina errada.
+       */
+      macCode: string
+      sessionId: string
+      reason: SessionClosedReason
+      /** Instante do encerramento gravado no banco, em UTC (sufixo `Z`). */
+      closedAt: string
+      /** Saldo da cota do dia depois deste encerramento, em minutos. */
+      remainingTime: number
+    }
 
 /* -------------------------------------------------------------------------- */
 /*                                  Helpers                                   */

@@ -4,6 +4,7 @@ import z from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
 import { tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
 import { rateLimits } from '@/http/rate-limit'
+import { notifySessionClosed, SESSION_CLOSED_REASONS } from '@/http/websocket'
 import { dayjs } from '@/lib/dayjs'
 import { prisma } from '@/lib/prisma'
 import { getDailyQuota } from './helpers/daily-quota'
@@ -50,6 +51,9 @@ export async function closeSession(app: FastifyInstance) {
           lawyerId: true,
           computer: {
             select: {
+              // Endereço da estação no canal `/ws/computers`: é por ele que o Desktop
+              // desta máquina é avisado do encerramento.
+              macCode: true,
               room: {
                 select: {
                   standardTime: true,
@@ -105,6 +109,17 @@ export async function closeSession(app: FastifyInstance) {
           },
         }),
       ])
+
+      // Depois da transação e sem `await` em nada que possa falhar: a sessão já está
+      // encerrada no banco, e o aviso é um efeito colateral que não pode derrubar a
+      // resposta. Estação offline devolve `false` e só vira log.
+      notifySessionClosed({
+        macCode: session.computer.macCode,
+        sessionId,
+        reason: SESSION_CLOSED_REASONS.MANUAL,
+        closedAt: now.toDate(),
+        remainingTime,
+      })
 
       return reply.status(200).send({
         message: 'Sessão encerrada com sucesso.',

@@ -238,7 +238,7 @@ Demais regras:
 
 - A API mantém um **canal WebSocket permanente** com os Desktops das salas, na mesma aplicação e na mesma porta: `ws://<host>:<porta>/ws/computers`. É por ele que os eventos que nascem fora da máquina (sessão encerrada pelo cron, computador colocado em manutenção, sala inativada) vão chegar ao Desktop, sem polling.
 
-  **O que o Desktop precisa fazer hoje** (só a identificação existe; nenhum evento de negócio trafega ainda):
+  **O que o Desktop precisa fazer hoje** (identificação + o evento de encerramento de sessão):
 
   1. Conectar assim que o aplicativo iniciar — a conexão é permanente, não se abre só na liberação.
   2. Enviar, logo após conectar, a identificação (prazo de **10 segundos**, senão a API encerra com `4408`):
@@ -261,7 +261,36 @@ Demais regras:
 
      Códigos possíveis: `invalid_payload`, `unknown_message_type`, `invalid_mac_code`, `already_registered`, `internal_error`.
 
-  5. Reconectar conforme o **close code**, e não sempre da mesma forma:
+  5. Tratar o evento **`session_closed`** — a sessão daquela máquina acabou e a tela precisa sair:
+
+     ```json
+     {
+       "type": "session_closed",
+       "macCode": "AA-BB-CC-DD-EE-01",
+       "sessionId": "clx8f2k9c0000abcd1234efgh",
+       "reason": "manual",
+       "closedAt": "2026-08-12T18:32:10.114Z",
+       "remainingTime": 95
+     }
+     ```
+
+     | Campo | Para que serve |
+     | --- | --- |
+     | `macCode` | destinatário pretendido, normalizado. **Confira contra o MAC desta máquina antes de agir** — a mensagem já chega pelo socket certo, mas conferir impede que um engano de roteamento no servidor derrube a sessão de quem está sentado na máquina |
+     | `sessionId` | **compare com a sessão aberta localmente e ignore se não bater.** É o que impede um evento atrasado (estação estava offline) de encerrar a sessão do advogado seguinte |
+     | `reason` | `manual` = alguém encerrou pela rota `close-computer` (painel ou o próprio Desktop); `expired` = a cota do dia acabou e o cron fechou. Muda só o texto na tela, não a ação |
+     | `closedAt` | instante gravado no banco, UTC |
+     | `remainingTime` | saldo do dia depois deste encerramento, em minutos |
+
+     Ao receber (e passar nas duas conferências acima): fechar a tela de sessão, devolver a máquina à trava e mostrar o motivo. **Não chamar `close-computer`** — o servidor está informando o que já gravou, não perguntando.
+
+     Três armadilhas que valem mais que o resto desta seção:
+
+     - **O evento volta como eco do próprio Desktop.** Quando o advogado clica em "Encerrar", o Desktop chama `POST /lawyers/close-computer/:sessionId` e o mesmo `session_closed` chega de volta pelo canal — muitas vezes **antes** da resposta HTTP, porque o socket já está aberto e a resposta ainda está no caminho. Marque no estado local que há um encerramento em curso e, quando o evento bater com esse `sessionId`, feche em silêncio, sem o aviso de "encerrado pela administração".
+     - **Toda a saída tem de ser idempotente.** O eco acima e a resposta HTTP vão executá-la duas vezes. Fechar uma janela já fechada não pode lançar.
+     - **Entrega não é garantida.** Estação offline não recebe nada, e o `register` ainda não devolve o estado atual. A rede de segurança é o próprio relógio do Desktop: quando ele zera, o `close-computer` responde `400` dizendo que a sessão já foi encerrada — trate esse `400` como sucesso e volte para a tela de identificação.
+
+  6. Reconectar conforme o **close code**, e não sempre da mesma forma:
 
      | Código | Significado | O que o Desktop faz |
      | --- | --- | --- |

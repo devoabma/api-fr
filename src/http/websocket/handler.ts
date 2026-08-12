@@ -2,7 +2,7 @@ import type { WebSocket } from '@fastify/websocket'
 import type { FastifyRequest } from 'fastify'
 import { formattedCodeMac } from '@/utils'
 import { computerConnections } from './connections'
-import { type RegisterMessage, parseClientMessage, sendError, sendMessage, WS_CLOSE_CODES, WS_ERROR_CODES } from './protocol'
+import { parseClientMessage, type RegisterMessage, sendError, sendMessage, WS_CLOSE_CODES, WS_ERROR_CODES } from './protocol'
 
 /** Mesmo formato validado no cadastro e na liberação: `AA-BB-CC-DD-EE-FF`. */
 const MAC_CODE_LENGTH = 17

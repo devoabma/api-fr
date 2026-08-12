@@ -1,5 +1,6 @@
 import cron from 'node-cron'
 import { env } from '@/http/env'
+import { notifySessionClosed, SESSION_CLOSED_REASONS } from '@/http/websocket'
 import { dayjs } from '@/lib/dayjs'
 import { prisma } from '@/lib/prisma'
 
@@ -19,12 +20,22 @@ function isTransientDbError(err: unknown): boolean {
   return TRANSIENT_DB_ERROR_MESSAGE.test(err.message)
 }
 
-async function closeSession(sessionId: string, computerId: string, lawyerId: string, now: Date) {
+type ExpiredSession = {
+  sessionId: string
+  computerId: string
+  macCode: string
+  lawyerId: string
+}
+
+async function closeSession({ sessionId, computerId, macCode, lawyerId }: ExpiredSession, now: Date) {
   const { count } = await prisma.computerSessions.updateMany({
     where: { id: sessionId, endedAt: null },
     data: { endedAt: now },
   })
 
+  // Outro caminho (o botão do quiosque, o painel) chegou primeiro. Quem fechou já avisou
+  // a estação; repetir o aviso aqui mandaria um encerramento para a sessão seguinte se o
+  // advogado tivesse acabado de liberar a máquina de novo.
   if (count === 0) return
 
   await prisma.$transaction([
@@ -38,7 +49,17 @@ async function closeSession(sessionId: string, computerId: string, lawyerId: str
     }),
   ])
 
-  // TODO: Lançamento do WebSocket para notificar o Desktop Client
+  // Sem o aviso, o Desktop só descobriria o fim ao tentar encerrar por conta própria — e
+  // uma máquina com o relógio atrasado ficaria com a tela de sessão de pé em cima de uma
+  // sessão que não existe mais no servidor.
+  notifySessionClosed({
+    macCode,
+    sessionId,
+    reason: SESSION_CLOSED_REASONS.EXPIRED,
+    closedAt: now,
+    // O job zera a cota do dia junto com o encerramento (ver o `update` acima).
+    remainingTime: 0,
+  })
 }
 
 async function checkExpiredSessions() {
@@ -60,6 +81,8 @@ async function checkExpiredSessions() {
       },
       computer: {
         select: {
+          // Endereço da estação no canal `/ws/computers`.
+          macCode: true,
           room: {
             select: {
               standardTime: true,
@@ -79,7 +102,15 @@ async function checkExpiredSessions() {
 
       if (diff < limitMinutes) continue
 
-      await closeSession(session.id, session.computerId, session.lawyerId, now.toDate())
+      await closeSession(
+        {
+          sessionId: session.id,
+          computerId: session.computerId,
+          macCode: session.computer.macCode,
+          lawyerId: session.lawyerId,
+        },
+        now.toDate()
+      )
 
       console.log(`[AutoClose ✅] Sessão ${session.id} encerrada automaticamente (tempo: ${diff}min, limite: ${limitMinutes}).`)
     } catch (err) {
