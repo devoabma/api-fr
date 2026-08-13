@@ -4,9 +4,8 @@ import { z } from 'zod'
 /**
  * Contrato das mensagens trocadas entre a API (servidor) e o Desktop (cliente).
  *
- * Toda mensagem é um JSON com o campo discriminador `type`. Novos eventos
- * (`computer_released`, `session_started`, `session_finished`, `heartbeat`...) entram
- * como novos membros das uniões abaixo, sem quebrar o que já existe.
+ * Toda mensagem é um JSON com o campo discriminador `type`. Novos eventos entram como
+ * novos membros das uniões abaixo, sem quebrar o que já existe.
  */
 
 /**
@@ -78,6 +77,35 @@ export type SessionClosedReason = (typeof SESSION_CLOSED_REASONS)[keyof typeof S
 export type ServerMessage =
   | { type: 'registered'; macCode: string; connectedAt: string }
   | { type: 'error'; code: WsErrorCode; message: string }
+  | {
+      /**
+       * Uma sessão começou nesta estação — o Desktop deve destravar a máquina e abrir a
+       * tela de sessão, exatamente como faz quando o próprio advogado(a) digita os dados
+       * no quiosque.
+       *
+       * O gatilho é sempre a rota `POST /lawyers/release-computer`, venha ela do painel
+       * (funcionário liberando no balcão) ou do próprio Desktop. No segundo caso a estação
+       * recebe de volta um evento sobre a sessão que ela mesma acabou de abrir: o Desktop
+       * deve tratar a mensagem como **idempotente** e ignorá-la quando o `sessionId` for o
+       * da sessão que já está na tela, em vez de reiniciar a contagem.
+       */
+      type: 'session_started'
+      /** Destinatário pretendido, conferido pelo Desktop — mesma proteção do `session_closed`. */
+      macCode: string
+      sessionId: string
+      /**
+       * Nome para a tela de boas-vindas. É o único dado do advogado(a) que trafega por
+       * aqui: enquanto o canal não tiver credencial de estação (ver `authorization.ts`),
+       * nada além do necessário para a UI deve sair por ele — nunca CPF, e-mail ou OAB.
+       */
+      lawyerName: string
+      /** Início gravado no banco, em UTC (sufixo `Z`). */
+      startedAt: string
+      /** Instante em que o servidor vai encerrar esta sessão, em UTC — igual ao da resposta HTTP. */
+      expiresAt: string
+      /** Saldo da cota do dia concedido a esta sessão, em minutos. */
+      remainingTime: number
+    }
   | {
       type: 'session_closed'
       /**

@@ -150,11 +150,13 @@ O sistema pode gerar relatórios:
 - [x] Excluir um computador (`DELETE /computers/delete/:id`; ADMIN-only, recusa se em uso, remove sessões e impressões em cascata).
 - [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; paginação pendente).
 - [x] Colocar/retirar um computador de manutenção (`PATCH /computers/maintenance/:id` e `.../remove`; ADMIN em qualquer máquina, funcionário comum nas de suas salas).
-- [ ] Liberar um computador manualmente.
+- [x] Liberar um computador manualmente pelo painel (mesma rota `POST /lawyers/release-computer`: o funcionário informa os dados do advogado(a) e o `macCode` da máquina, e a API destrava a estação pelo evento `session_started` do WebSocket).
 
 #### ⚖️ Advogados (Lawyers)
 
-- [x] Solicitar o uso do computador em uma determinada sala (`POST /lawyers/release-computer`; o `200` devolve `message`, `sessionId`, `lawyerName`, `remainingTime` em minutos e `expiresAt` em ISO 8601 UTC — o cliente distingue liberação concedida de sessão estourada por `remainingTime`, nunca pelo texto de `message`).
+- [x] Solicitar o uso do computador em uma determinada sala (`POST /lawyers/release-computer`; o `200` devolve `message`, `sessionId`, `lawyerName`, `remainingTime` em minutos, `expiresAt` em ISO 8601 UTC e `notified` — o cliente distingue liberação concedida de sessão estourada por `remainingTime`, nunca pelo texto de `message`).
+  - A rota é a mesma para o quiosque e para o painel. Quem chama não muda nada no servidor: a API grava a sessão e avisa a estação pelo WebSocket (`session_started`), de modo que a liberação feita no balcão destrava a máquina da sala sozinha.
+  - `notified: false` significa que a sessão foi gravada mas o Desktop daquele computador está offline — **o painel precisa mostrar isso**, porque a tela não vai destravar sem alguém ir até a máquina.
 - [x] Criar cron job que verifica sessões expiradas dos advogados e libera o computador (`node-cron` in-process, verifica a cada 1min sem sobreposição).
 - [x] Cancelar a própria sessão (`POST /lawyers/close-computer/:sessionId`).
 - [x] Continuar a sessão de onde parou (no mesmo dia somente).
@@ -261,7 +263,35 @@ Demais regras:
 
      Códigos possíveis: `invalid_payload`, `unknown_message_type`, `invalid_mac_code`, `already_registered`, `internal_error`.
 
-  5. Tratar o evento **`session_closed`** — a sessão daquela máquina acabou e a tela precisa sair:
+  5. Tratar o evento **`session_started`** — alguém liberou esta máquina e a sessão precisa abrir:
+
+     ```json
+     {
+       "type": "session_started",
+       "macCode": "AA-BB-CC-DD-EE-01",
+       "sessionId": "clx8f2k9c0000abcd1234efgh",
+       "lawyerName": "FULANO DE TAL",
+       "startedAt": "2026-08-13T13:02:00.000Z",
+       "expiresAt": "2026-08-13T15:02:00.000Z",
+       "remainingTime": 120
+     }
+     ```
+
+     | Campo | Para que serve |
+     | --- | --- |
+     | `macCode` | destinatário pretendido, normalizado. **Confira contra o MAC desta máquina antes de agir**, pela mesma razão do `session_closed` |
+     | `sessionId` | identidade da sessão. **Se for igual à sessão já aberta na tela, ignore** — é o eco da liberação que o próprio Desktop pediu |
+     | `lawyerName` | nome para a tela de boas-vindas. É o único dado do advogado(a) que trafega pelo canal |
+     | `startedAt` / `expiresAt` | início e fim da sessão, em UTC. **Desenhe a contagem a partir do `expiresAt`**, não somando minutos no relógio local |
+     | `remainingTime` | cota concedida a esta sessão, em minutos |
+
+     Ao receber: destravar a máquina e abrir a tela de sessão, exatamente como quando o advogado(a) digita os dados no próprio quiosque. **Não chamar `release-computer`** — a sessão já está gravada; o servidor está informando, não perguntando.
+
+     - **É este evento que faz a liberação pelo painel funcionar.** O funcionário preenche CPF, OAB e nascimento no balcão e escolhe o computador; sem tratar `session_started`, a máquina ficaria `inUse` no banco e trancada na tela.
+     - **O eco vale aqui também.** Quando é o próprio Desktop que chama `release-computer`, o evento chega — muitas vezes antes da resposta HTTP. Abrir uma sessão já aberta não pode reiniciar a contagem nem duplicar tela: compare o `sessionId` e ignore.
+     - **Estação offline não recebe nada.** Se o Desktop estava fora do ar durante a liberação, ele não abre a sessão sozinha ao voltar — o `register` ainda não devolve o estado atual (ver o roadmap). O painel enxerga esse caso pelo `notified: false` na resposta HTTP.
+
+  6. Tratar o evento **`session_closed`** — a sessão daquela máquina acabou e a tela precisa sair:
 
      ```json
      {
@@ -278,7 +308,7 @@ Demais regras:
      | --- | --- |
      | `macCode` | destinatário pretendido, normalizado. **Confira contra o MAC desta máquina antes de agir** — a mensagem já chega pelo socket certo, mas conferir impede que um engano de roteamento no servidor derrube a sessão de quem está sentado na máquina |
      | `sessionId` | **compare com a sessão aberta localmente e ignore se não bater.** É o que impede um evento atrasado (estação estava offline) de encerrar a sessão do advogado seguinte |
-     | `reason` | `manual` = alguém encerrou pela rota `close-computer` (painel ou o próprio Desktop); `expired` = a cota do dia acabou e o cron fechou. Muda só o texto na tela, não a ação |
+     | `reason` | `manual` = alguém encerrou pela rota `close-computer` (painel ou o próprio Desktop); `expired` = a cota do dia acabou (o cron `auto-close-sessions`, ou uma tentativa de liberação em cima de uma sessão que já estourou o tempo). Muda só o texto na tela, não a ação |
      | `closedAt` | instante gravado no banco, UTC |
      | `remainingTime` | saldo do dia depois deste encerramento, em minutos |
 
@@ -290,7 +320,7 @@ Demais regras:
      - **Toda a saída tem de ser idempotente.** O eco acima e a resposta HTTP vão executá-la duas vezes. Fechar uma janela já fechada não pode lançar.
      - **Entrega não é garantida.** Estação offline não recebe nada, e o `register` ainda não devolve o estado atual. A rede de segurança é o próprio relógio do Desktop: quando ele zera, o `close-computer` responde `400` dizendo que a sessão já foi encerrada — trate esse `400` como sucesso e volte para a tela de identificação.
 
-  6. Reconectar conforme o **close code**, e não sempre da mesma forma:
+  7. Reconectar conforme o **close code**, e não sempre da mesma forma:
 
      | Código | Significado | O que o Desktop faz |
      | --- | --- | --- |

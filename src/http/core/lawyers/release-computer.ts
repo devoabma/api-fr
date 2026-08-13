@@ -6,6 +6,7 @@ import { NotFoundError } from '@/http/_errors/not-found'
 import { tooManyRequestsSchema } from '@/http/_errors/schemas/error-responses'
 import { env } from '@/http/env'
 import { rateLimits } from '@/http/rate-limit'
+import { notifySessionClosed, notifySessionStarted, SESSION_CLOSED_REASONS } from '@/http/websocket'
 import { API_PROTHEUS_DATA } from '@/lib/axios'
 import { dayjs } from '@/lib/dayjs'
 import { prisma } from '@/lib/prisma'
@@ -39,6 +40,16 @@ const releaseComputerSchema = {
        * `null` quando a resposta não abre sessão nova (cota do dia já consumida).
        */
       expiresAt: z.iso.datetime().nullable(),
+      /**
+       * Se o aviso desta operação (abertura ou encerramento) chegou à estação pelo
+       * WebSocket.
+       *
+       * Existe para o **painel**: liberando do balcão, quem vê o resultado não vê a
+       * máquina. `false` significa que a sessão está gravada mas o Desktop daquele
+       * computador está offline — a tela não vai destravar sozinha e alguém precisa ir
+       * até lá. Para o Desktop, que liberou a si mesmo, o campo é irrelevante.
+       */
+      notified: z.boolean(),
     }),
     400: z.object({
       message: z.string(),
@@ -220,10 +231,15 @@ export async function releaseComputer(app: FastifyInstance) {
 
         // O limite da sessão em curso é o SALDO do dia, não o tempo cheio da sala.
         if (differenceInMinutes >= remainingMinutes) {
-          await prisma.$transaction([
-            prisma.computerSessions.update({
+          const [closedSession] = await prisma.$transaction([
+            // `updateMany` com `endedAt: null` em vez de `update` pelo id: este ramo trata
+            // justamente a sessão que estourou o tempo, que é a mesma que o cron
+            // `auto-close-sessions` está prestes a fechar. O filtro faz o `count` dizer se
+            // quem encerrou foi esta requisição — e é ele que decide o aviso logo abaixo.
+            prisma.computerSessions.updateMany({
               where: {
                 id: activeSession.id,
+                endedAt: null,
               },
               data: {
                 endedAt: now.toDate(),
@@ -250,6 +266,23 @@ export async function releaseComputer(app: FastifyInstance) {
             }),
           ])
 
+          // Este ramo também encerra sessão — e quem pediu a liberação pode não ser a
+          // estação (o painel do balcão). Sem o aviso, a máquina que estourou o tempo
+          // continuaria com a tela do advogado(a) de pé sobre uma sessão morta, do mesmo
+          // jeito que aconteceria sem o aviso do cron `auto-close-sessions`.
+          //
+          // `count === 0` significa que o cron chegou primeiro e já avisou a estação:
+          // repetir o aviso aqui só duplicaria a mensagem para o mesmo `sessionId`.
+          const notified =
+            closedSession.count > 0 &&
+            notifySessionClosed({
+              macCode: formattedMacCode,
+              sessionId: activeSession.id,
+              reason: SESSION_CLOSED_REASONS.EXPIRED,
+              closedAt: now.toDate(),
+              remainingTime: 0,
+            })
+
           return reply.status(200).send({
             message: 'Sessão encerrada devido ao tempo limite atingido. Por favor, tente novamente amanhã.',
             sessionId: activeSession.id,
@@ -258,6 +291,7 @@ export async function releaseComputer(app: FastifyInstance) {
             // o tempo. É por este campo que o Desktop distingue os dois casos.
             remainingTime: 0,
             expiresAt: null,
+            notified,
           })
         } else {
           const remainingTime = remainingMinutes - differenceInMinutes
@@ -308,13 +342,35 @@ export async function releaseComputer(app: FastifyInstance) {
         }),
       ])
 
+      // Mesma conta do auto-close-sessions, para as duas pontas expirarem no mesmo instante.
+      const expiresAt = dayjs(startedAt).add(remainingMinutes, 'minute').toDate()
+
+      /**
+       * Depois da transação e sem `await`: a sessão já está gravada, e o aviso é efeito
+       * colateral que não pode derrubar a resposta.
+       *
+       * É este disparo que faz a liberação pelo painel valer para o advogado(a) — o
+       * funcionário preenche os dados no balcão e a máquina da sala destrava sozinha,
+       * como se ele tivesse digitado no próprio quiosque. Quando quem chamou foi o
+       * Desktop, o evento volta para ele sobre a sessão que acabou de abrir; o cliente
+       * ignora pelo `sessionId` que já está em tela.
+       */
+      const notified = notifySessionStarted({
+        macCode: formattedMacCode,
+        sessionId: computerSession.id,
+        lawyerName: lawyer.name,
+        startedAt,
+        expiresAt,
+        remainingTime: remainingMinutes,
+      })
+
       return reply.status(200).send({
         message: 'Computador liberado com sucesso.',
         sessionId: computerSession.id,
         lawyerName: lawyer.name,
         remainingTime: remainingMinutes,
-        // Mesma conta do auto-close-sessions, para as duas pontas expirarem no mesmo instante.
-        expiresAt: dayjs(startedAt).add(remainingMinutes, 'minute').toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        notified,
       })
     }
   )

@@ -8,7 +8,7 @@ import { WS_CLOSE_CODES } from './protocol'
 
 export type { ComputerConnection } from './connections'
 export { computerConnections } from './connections'
-export { notifySessionClosed } from './notifications'
+export { notifySessionClosed, notifySessionStarted } from './notifications'
 export type { ServerMessage, SessionClosedReason } from './protocol'
 export { SESSION_CLOSED_REASONS, WS_CLOSE_CODES, WS_ERROR_CODES } from './protocol'
 
