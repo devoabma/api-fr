@@ -246,14 +246,31 @@ Demais regras:
   2. Enviar, logo após conectar, a identificação (prazo de **10 segundos**, senão a API encerra com `4408`):
 
      ```json
-     { "type": "register", "macCode": "AA-BB-CC-DD-EE-01" }
+     { "type": "register", "macCode": "AA-BB-CC-DD-EE-01", "version": "1.0.1" }
      ```
 
-  3. Aguardar a confirmação da API:
+     O `version` (versão do Desktop instalado) é **opcional** e serve só para o log do servidor por enquanto. Campos extras que a API não conhece são ignorados, nunca recusados — o canal não cai por causa deles.
+
+  3. Aguardar a confirmação da API, que **já traz o rótulo da estação**:
 
      ```json
-     { "type": "registered", "macCode": "AA-BB-CC-DD-EE-01", "connectedAt": "2026-08-09T18:00:00.000Z" }
+     {
+       "type": "registered",
+       "macCode": "AA-BB-CC-DD-EE-01",
+       "connectedAt": "2026-08-09T18:00:00.000Z",
+       "roomName": "Sala Fórum",
+       "number": 10
+     }
      ```
+
+     | Campo | Para que serve |
+     | --- | --- |
+     | `roomName` | Nome da sala a que o computador pertence, direto do cadastro |
+     | `number` | Número do computador dentro da sala |
+
+     **O Desktop deve exibir o que vier daqui**, em vez do que estiver no arquivo local: quem sabe onde a máquina está é o servidor. Assim a instalação de um quiosque novo não exige saber a sala (basta cadastrar o computador no painel), e um remanejamento feito no painel aparece sozinho na tela, na conexão seguinte.
+
+     Os dois campos **podem não vir** — MAC ainda não cadastrado ou indisponibilidade do banco no instante do registro. Nesse caso o registro acontece normalmente e o Desktop cai na configuração local.
 
   4. Tratar o erro, que **não fecha a conexão** — corrigir a mensagem e reenviar:
 

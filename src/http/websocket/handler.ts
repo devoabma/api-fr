@@ -1,5 +1,6 @@
 import type { WebSocket } from '@fastify/websocket'
 import type { FastifyRequest } from 'fastify'
+import { prisma } from '@/lib/prisma'
 import { formattedCodeMac } from '@/utils'
 import { computerConnections } from './connections'
 import { parseClientMessage, type RegisterMessage, sendError, sendMessage, WS_CLOSE_CODES, WS_ERROR_CODES } from './protocol'
@@ -28,7 +29,34 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
 
   console.log('[WS 🔌] Nova conexão aberta, aguardando registro...')
 
-  function handleRegister(message: RegisterMessage) {
+  /**
+   * Busca o rótulo da estação (sala e número) no cadastro.
+   *
+   * Nunca lança: o registro já aconteceu quando isto roda, e uma indisponibilidade do banco
+   * não pode custar o canal da máquina. Sem o rótulo o Desktop cai na configuração local.
+   */
+  async function findComputerLabel(macCode: string): Promise<{ roomName: string; number: number } | null> {
+    try {
+      const computer = await prisma.computers.findUnique({
+        where: { macCode },
+        select: { number: true, room: { select: { name: true } } },
+      })
+
+      if (!computer) {
+        console.warn(`[WS ⚠️ ] Computador ${macCode} conectado mas não encontrado no cadastro; registrado sem sala e número.`)
+
+        return null
+      }
+
+      return { roomName: computer.room.name, number: computer.number }
+    } catch (err) {
+      console.error(`[WS ❌] Falha ao buscar o cadastro de ${macCode}; registrado sem sala e número:`, err)
+
+      return null
+    }
+  }
+
+  async function handleRegister(message: RegisterMessage) {
     const macCode = formattedCodeMac(message.macCode)
 
     if (macCode.length !== MAC_CODE_LENGTH) {
@@ -60,16 +88,31 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
 
     registeredMacCode = macCode
 
+    // Tudo que decide a identidade desta conexão já rodou de forma síncrona acima: o `await`
+    // abaixo é o primeiro ponto de suspensão, então nem o timeout de registro nem uma segunda
+    // mensagem conseguem se intrometer no meio do processo.
+    const label = await findComputerLabel(macCode)
+
+    // Enquanto a consulta corria, uma reconexão pode ter assumido a chave — o ack pertence
+    // à conexão que está no mapa, não a esta.
+    if (computerConnections.get(macCode)?.socket !== socket) {
+      return
+    }
+
     sendMessage(socket, {
       type: 'registered',
       macCode,
       connectedAt: connection.connectedAt.toISOString(),
+      ...(label ?? {}),
     })
 
-    console.log(`[WS ✅] Computador ${macCode} registrado (${computerConnections.size} conectado(s)).`)
+    console.log(
+      `[WS ✅] Computador ${macCode} registrado${label ? ` em ${label.roomName} (nº ${label.number})` : ''}` +
+        `${message.version ? ` — Desktop v${message.version}` : ''} (${computerConnections.size} conectado(s)).`
+    )
   }
 
-  socket.on('message', raw => {
+  socket.on('message', async raw => {
     // O conteúdo bruto nunca vai para o log: pode carregar credencial quando a
     // autenticação de estação entrar.
     const parsed = parseClientMessage(raw.toString())
@@ -85,7 +128,9 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
     try {
       switch (parsed.data.type) {
         case 'register':
-          handleRegister(parsed.data)
+          // O `await` mantém a falha dentro deste try/catch: sem ele a rejeição escaparia
+          // como unhandled rejection e derrubaria o processo.
+          await handleRegister(parsed.data)
           break
 
         default: {

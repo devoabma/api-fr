@@ -25,6 +25,7 @@
 - [x] Deploy em produção (Coolify + Nginx Proxy Manager em `api-fr.oabma.org.br` — runbook completo em [`docs/DEPLOY.md`](./DEPLOY.md))
 - [~] WebSocket com os Desktops das salas (`src/http/websocket/` — `@fastify/websocket` na mesma app e mesma porta, endpoint `ws://<host>:<porta>/ws/computers`)
   - [x] Infraestrutura: registro por `{ "type": "register", "macCode": "..." }`, mapa em memória `macCode → socket` (`connections.ts`), protocolo tipado por `type` com Zod (`protocol.ts`), heartbeat de ping/pong a cada 30s, limpeza na desconexão e no shutdown
+  - [x] Rótulo da estação no `registered` (`roomName` e `number` do cadastro — o instalador não precisa mais saber a sala, e remanejar um computador no painel chega à tela na reconexão; ausentes quando o MAC não está cadastrado, e aí o Desktop cai na configuração local)
   - [ ] Autenticação da estação (TOFU: token opaco no header `Authorization`, hoje o `macCode` é só uma afirmação do cliente — gancho pronto em `websocket/authorization.ts`)
   - [~] Eventos de negócio
     - [x] `session_closed` (`websocket/notifications.ts` — disparado por `close-session.ts` com `reason: manual` e pelo cron `auto-close-sessions` com `reason: expired`; leva `macCode` e `sessionId` para o Desktop conferir antes de fechar a tela)

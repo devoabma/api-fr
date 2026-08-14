@@ -41,9 +41,31 @@ export type WsErrorCode = (typeof WS_ERROR_CODES)[keyof typeof WS_ERROR_CODES]
 /*                            Cliente -> Servidor                             */
 /* -------------------------------------------------------------------------- */
 
+/** Teto para a versão informada pelo Desktop: é texto de cliente e só vai para o log. */
+const MAX_VERSION_LENGTH = 40
+
 const registerMessageSchema = z.object({
   type: z.literal('register'),
   macCode: z.string().trim().nonempty('Mac Code obrigatório'),
+  /**
+   * Versão do Desktop instalado na estação, opcional.
+   *
+   * Declarada aqui de propósito, mesmo sem uso obrigatório: o `z.object` ignora chaves
+   * desconhecidas, então o campo já passaria calado — mas ficaria refém de alguém trocar o
+   * schema por `.strict()` um dia e derrubar o canal de toda estação que envia a versão.
+   *
+   * Hoje só aparece no log do registro. Persistir e mostrar no painel é passo seguinte, e
+   * não muda nada deste lado.
+   */
+  version: z
+    .string()
+    .trim()
+    .max(MAX_VERSION_LENGTH)
+    // Sobra só o que parece número de versão. Sanear em vez de recusar é proposital: o valor
+    // é acessório, e derrubar o registro da estação por causa dele seria o pior dos mundos.
+    // De quebra fecha a porta para quebra de linha forjar entrada falsa no log.
+    .transform(value => value.replace(/[^\w.+-]/g, ''))
+    .optional(),
 })
 
 /**
@@ -75,7 +97,27 @@ export const SESSION_CLOSED_REASONS = {
 export type SessionClosedReason = (typeof SESSION_CLOSED_REASONS)[keyof typeof SESSION_CLOSED_REASONS]
 
 export type ServerMessage =
-  | { type: 'registered'; macCode: string; connectedAt: string }
+  | {
+      /**
+       * Confirma que o servidor reconheceu a estação e devolve o rótulo dela.
+       *
+       * `roomName` e `number` saem do cadastro do computador: é o servidor que sabe onde a
+       * máquina está, então o instalador não precisa mais que alguém digite a sala à mão em
+       * cada quiosque, e um remanejamento feito no painel chega sozinho na tela na conexão
+       * seguinte.
+       *
+       * Os dois campos são opcionais **no protocolo** porque o canal aceita MAC que ainda
+       * não está cadastrado (e porque uma falha de banco não pode custar o registro): nesse
+       * caso o Desktop cai na configuração local, como já fazia.
+       */
+      type: 'registered'
+      macCode: string
+      connectedAt: string
+      /** Nome da sala a que o computador pertence. Ausente quando o MAC não está cadastrado. */
+      roomName?: string
+      /** Número do computador dentro da sala. Ausente quando o MAC não está cadastrado. */
+      number?: number
+    }
   | { type: 'error'; code: WsErrorCode; message: string }
   | {
       /**
