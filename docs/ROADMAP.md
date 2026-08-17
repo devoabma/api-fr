@@ -20,6 +20,7 @@
 - [x] Documentação Swagger/OpenAPI (`@fastify/swagger`)
 - [x] Handler para rota inexistente (`app.setNotFoundHandler` — `404` com `{ message, route }`; com teto próprio de 60 req/min por IP, já que o limitador do plugin só cobre rotas registradas)
 - [x] Rate limit por IP (`@fastify/rate-limit` — política em `src/http/rate-limit.ts`: teto global de 300 req/min, tetos apertados nas rotas públicas caras (login, recuperação/reset de senha, liberação de computador, impressão), `429` com `{ message, retryAfterInSeconds }`; `/health` e `/docs` isentos; IP real do cliente via `TRUST_PROXY`)
+- [x] Política de CORS (`@fastify/cors` — origem única vinda de `WEB_URL` + `credentials: true`, exigência do navegador para o cookie `httpOnly` de sessão funcionar entre origens; `WEB_URL` validada como URL e sem barra final, porque a comparação com o header `Origin` é byte a byte. Não vale para cliente fora do navegador: desktop, Insomnia e `curl` não passam por CORS)
 - [x] Seed do usuário ADMIN master (`prisma/seed.ts` — cria o ADMIN a partir do `.env` quando ausente e envia e-mail de confirmação; idempotente via guard; rodar via `pnpm db:deploy` no release do deploy)
 - [x] Build de produção (`tsup.config.ts` — compila `src` para `build/` em ESM; `pnpm build` + `pnpm start` executam o artefato sem depender de `tsx`)
 - [x] Deploy em produção (Coolify + Nginx Proxy Manager em `api-fr.oabma.org.br` — runbook completo em [`docs/DEPLOY.md`](./DEPLOY.md))

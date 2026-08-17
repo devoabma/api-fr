@@ -48,13 +48,29 @@ const allowDefaultingLawyersSchema = z
   .default('false')
   .transform(value => value.trim().toLowerCase() === 'true')
 
+/**
+ * Origem do front web. Serve para duas coisas com exigências diferentes:
+ *
+ * - **CORS**: o `Origin` que o navegador manda nunca tem barra no fim nem caminho.
+ *   `@fastify/cors` compara a string byte a byte, então `https://app.exemplo.com/`
+ *   simplesmente nunca casa — e o sintoma é o front inteiro tomando erro de CORS
+ *   sem nenhuma mensagem no log da API.
+ * - **Links de e-mail** (`${WEB_URL}/sign-in`): com barra no fim viraria `//sign-in`.
+ *
+ * Nos dois casos o conserto é o mesmo: exigir URL válida e cortar as barras finais.
+ */
+const webUrlSchema = z
+  .url()
+  .default('http://localhost:3000')
+  .transform(value => value.replace(/\/+$/, ''))
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['dev', 'production']).default('dev'),
   ALLOW_DEFAULTING_LAWYERS: allowDefaultingLawyersSchema,
   API_PORT: z.coerce.number().default(25600),
   TRUST_PROXY: trustProxySchema,
   TIMEZONE: timezoneSchema.default('America/Fortaleza'),
-  WEB_URL: z.string().default('http://localhost:3000'),
+  WEB_URL: webUrlSchema,
   DOMAIN_URL: z.string().default('localhost'),
   CPF_ADMIN: cpfSchema,
   EMAIL_ADMIN: z.email(),

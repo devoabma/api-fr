@@ -135,6 +135,16 @@ cálculo de tempo das sessões e o horário dos jobs agendados — não o fuso d
 servidor. Se não for definido, cai no default `America/Fortaleza`; se vier um
 valor inválido, a API não sobe (falha no boot em vez de errar horário calado).
 
+`WEB_URL` é a **origem exata do front web** — esquema + host + porta, sem
+caminho e **sem barra no fim** (ex: `https://app.oabma.org.br`). Ela governa
+duas coisas: os links dos e-mails e a política de CORS. No CORS o valor é
+comparado byte a byte com o header `Origin` que o navegador envia, e esse
+header nunca tem barra final; uma barra sobrando bloqueia o front inteiro
+**sem gerar uma linha de log na API**, porque quem barra é o navegador. A API
+corta barras finais por conta própria e recusa subir se o valor vier sem
+esquema, mas o host errado ela não tem como adivinhar — confira no primeiro
+deploy.
+
 `DATABASE_URL` aponta pra um Postgres externo, então não depende de rede
 interna do Docker — funciona igual em dev e em produção.
 
@@ -399,6 +409,8 @@ proxy_send_timeout 3600s;
 | Página "Congratulations! You've successfully started the Nginx Proxy Manager" | O `Host` da requisição não bateu com nenhum proxy host — domínio digitado diferente do cadastrado, ou o proxy host ainda não foi salvo. |
 | Senha do admin não funciona, mas o e-mail de boas-vindas chegou com ela truncada | `$` na variável interpolado pelo Docker Compose. Escapar com `$$` — e lembrar que o seed é idempotente, corrigir a variável não troca a senha de um admin já criado. Ver seção acima. |
 | Links dos e-mails apontando pra `localhost` | `WEB_URL` com o valor de desenvolvimento. É usada na montagem dos links de cadastro e recuperação de senha. |
+| Front web inteiro tomando erro de CORS, sem nada no log da API | `WEB_URL` diferente da origem real do front — tipicamente com **barra no fim** ou com o host de outro ambiente. O bloqueio é do navegador, então o servidor não registra nada. Conferir o valor no Coolify e comparar com o `Origin` que aparece no DevTools. |
+| Front loga com sucesso e a chamada seguinte volta `401` | O front não está enviando credenciais: falta `credentials: 'include'` (fetch) ou `withCredentials: true` (axios). O cookie de sessão é `httpOnly` e só acompanha a requisição quando o cliente pede. |
 | Desktop conecta no WebSocket e cai sozinho depois de ~1 min | `Websockets Support` desligado no proxy host, ou `proxy_read_timeout` curto demais. Ver seção do NPM. |
 | Secrets aparecem em texto puro no log de build do Coolify | Variável marcada como "Available at Buildtime" — desmarcar, deixar só "Available at Runtime". |
 | Usuários tomando `429` sem motivo / login e recuperação de senha bloqueados pra todo mundo ao mesmo tempo | `TRUST_PROXY` em `false` (ou ausente) em produção: o rate limit está contando todos os clientes como um IP só. Ver seção acima. |

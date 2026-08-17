@@ -238,6 +238,14 @@ Demais regras:
 
   > A contagem só funciona por cliente se `TRUST_PROXY` estiver correto em produção — ver [`docs/DEPLOY.md`](./DEPLOY.md).
 
+- A API aceita chamadas de navegador de **uma única origem**: a definida em `WEB_URL`. A resposta traz `Access-Control-Allow-Credentials: true`, porque a autenticação do painel é por **cookie `httpOnly`** e o navegador só grava e reenvia esse cookie entre origens diferentes quando a API nomeia a origem explicitamente — o coringa `*` é proibido pela especificação quando há credenciais.
+
+  **O que o front web precisa fazer**: enviar as requisições com credenciais — `credentials: 'include'` no `fetch`, `withCredentials: true` no axios. Sem isso o cookie não acompanha a chamada e a API responde `401`, mesmo com o login tendo funcionado. É o sintoma mais provável de um front que "loga e cai".
+
+  **O app desktop não é afetado.** CORS é uma regra que o *navegador* aplica antes de entregar a resposta à página; cliente que não manda o header `Origin` — desktop, Insomnia, `curl`, healthcheck do contêiner — nem é avaliado. Pelo mesmo motivo, **CORS não é controle de acesso**: quem protege a API continua sendo a autenticação, a autorização por papel e o rate limit. O canal WebSocket também fica de fora.
+
+  `WEB_URL` precisa ser a origem exata (esquema + host + porta), **sem barra no fim** — o header `Origin` nunca tem uma, e a comparação é byte a byte. A API corta barras finais sozinha e recusa subir com URL sem esquema, justamente porque a falha seria silenciosa: o bloqueio acontece no navegador e nada aparece no log.
+
 - A API mantém um **canal WebSocket permanente** com os Desktops das salas, na mesma aplicação e na mesma porta: `ws://<host>:<porta>/ws/computers`. É por ele que os eventos que nascem fora da máquina (sessão encerrada pelo cron, computador colocado em manutenção, sala inativada) vão chegar ao Desktop, sem polling.
 
   **O que o Desktop precisa fazer hoje** (identificação + o evento de encerramento de sessão):

@@ -71,8 +71,10 @@ app.register(fastifyJwt, {
   },
 })
 
+// Com `credentials: true` o navegador rejeita `origin: '*'`, então a origem precisa ser explícita.
 app.register(fastifyCors, {
-  origin: '*',
+  origin: env.WEB_URL,
+  credentials: true,
 })
 
 app.register(fastifyCookie)
