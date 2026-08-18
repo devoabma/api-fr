@@ -9,7 +9,8 @@
 ## 0. Infraestrutura / Fundação
 
 - [x] Plugin Prisma Client (singleton com adapter-pg) acessível nas rotas
-- [x] Tratamento global de erros (errorHandler) + classes de erro de domínio
+- [x] Tratamento global de erros (errorHandler) + classes de erro de domínio (inclui rede de segurança para os 4xx do próprio Fastify — corpo grande demais, mídia não suportada: respondem o status certo com mensagem traduzida em vez de virarem `500` e ruído no log)
+- [x] Parser próprio de `application/json` (`app.ts` — corpo vazio vira `{}` porque axios/fetch mandam o header mesmo sem corpo; o parser padrão recusava isso **antes do roteamento** e mascarava tanto o `404` de URL errada quanto a lista de campos faltando do Zod. JSON malformado continua `400`)
 - [x] Hash de senha (bcrypt/argon2) — RNF: senha criptografada
 - [x] Autenticação JWT (`@fastify/jwt`) + middleware/decorator `request.getIdCurrentEmployee()`
 - [x] Middleware de autorização por papel (ADMIN vs MEMBER) — `request.checkIfEmployeeIsAdmin()`
@@ -40,6 +41,7 @@
 ### Casos de uso (RF)
 - [x] Criar funcionário (`create-account.ts`)
 - [x] Autenticar (login) (`authenticate.ts`)
+- [x] Encerrar sessão (logout) (`logout.ts` — `POST /employees/session/logout`; apaga o cookie `httpOnly` repetindo os mesmos atributos da gravação, sem exigir autenticação para que a sessão expirada também consiga sair. O JWT segue válido até vencer — não há lista de revogação)
 - [x] Obter perfil do usuário logado (`get-profile.ts` — `GET /employees/profile`)
 - [x] Trocar de senha (`change-password.ts` — `PATCH /employees/change-password`)
 - [x] Redefinir senha (`reset-password.ts` — `POST /employees/reset-password`)

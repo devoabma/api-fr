@@ -8,6 +8,7 @@ import ScalarApiReference from '@scalar/fastify-api-reference'
 import { fastify } from 'fastify'
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod'
 import { errorHandler } from './_errors'
+import { BadRequestError } from './_errors/bad-request'
 import { env } from './env'
 import { globalRateLimit } from './rate-limit'
 import { appRoutes } from './routes'
@@ -23,6 +24,32 @@ app.setSerializerCompiler(serializerCompiler)
 app.setValidatorCompiler(validatorCompiler)
 
 app.setErrorHandler(errorHandler)
+
+/**
+ * Clientes HTTP (axios, fetch) mandam `Content-Type: application/json` mesmo em
+ * requisições sem corpo, como o logout. O parser padrão rejeita isso com
+ * FST_ERR_CTP_EMPTY_JSON_BODY, e a mensagem atrapalha em dois cenários:
+ *
+ * - **Mascara 404**: o corpo é parseado ANTES do roteamento, então uma URL errada
+ *   devolve "Body cannot be empty" em vez de "Rota não encontrada" — e a busca pelo
+ *   bug vai parar no lugar errado.
+ * - **Mascara validação**: em rota que exige corpo, o Zod nunca roda e o front perde
+ *   a lista de campos faltando.
+ *
+ * Corpo vazio vira `{}` e segue o fluxo normal. JSON malformado continua sendo erro.
+ */
+app.removeContentTypeParser('application/json')
+app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, body, done) => {
+  if (body === '') {
+    return done(null, {})
+  }
+
+  try {
+    done(null, JSON.parse(body as string))
+  } catch {
+    done(new BadRequestError('Corpo da requisição não é um JSON válido.'), undefined)
+  }
+})
 
 // Registrado antes das rotas: o plugin instala um hook em cada rota declarada depois dele.
 app.register(fastifyRateLimit, globalRateLimit).after(() => {

@@ -120,6 +120,7 @@ O sistema pode gerar relatórios:
 - [x] Criar seed do usuário administrador master (permissão para criar funcionários e salas).
 - [x] Cadastrar funcionários.
 - [x] Autenticar.
+- [x] Encerrar a sessão (logout).
 - [x] Obter o perfil de um usuário logado.
 - [x] Trocar de senha.
 - [x] Redefinir a senha.
@@ -180,6 +181,8 @@ O sistema pode gerar relatórios:
 - Somente administradores podem ativar um funcionário.
 - Somente administradores podem alterar um funcionário.
 - O funcionário não pode se autenticar se estiver inativo.
+- Sair da conta é uma chamada à API (`POST /employees/session/logout`), não uma limpeza no front: o cookie de sessão é `httpOnly` e o JavaScript não consegue apagá-lo. O logout não exige sessão válida — o caso mais comum de clicar em "sair" é a sessão já ter expirado, e recusar com `401` deixaria no navegador justamente o cookie que se queria remover.
+- O logout encerra a sessão do navegador, mas o JWT continua válido até vencer (1 dia). Não existe lista de revogação: derrubar um token específico exigiria consultar armazenamento a cada requisição autenticada.
 - Somente administradores podem vincular funcionários a salas.
 - Não é possível vincular um funcionário a uma sala inativa nem duplicar um vínculo existente.
 - Somente administradores podem criar salas.
@@ -245,6 +248,12 @@ Demais regras:
   **O app desktop não é afetado.** CORS é uma regra que o *navegador* aplica antes de entregar a resposta à página; cliente que não manda o header `Origin` — desktop, Insomnia, `curl`, healthcheck do contêiner — nem é avaliado. Pelo mesmo motivo, **CORS não é controle de acesso**: quem protege a API continua sendo a autenticação, a autorização por papel e o rate limit. O canal WebSocket também fica de fora.
 
   `WEB_URL` precisa ser a origem exata (esquema + host + porta), **sem barra no fim** — o header `Origin` nunca tem uma, e a comparação é byte a byte. A API corta barras finais sozinha e recusa subir com URL sem esquema, justamente porque a falha seria silenciosa: o bloqueio acontece no navegador e nada aparece no log.
+
+- **Requisição sem corpo é válida.** Axios e `fetch` mandam `Content-Type: application/json` mesmo quando não há corpo (`axios.post(url)` sem segundo argumento). A API usa parser próprio: corpo vazio chega às rotas como `{}` e quem decide se falta algo é o schema Zod da rota. Corpo que não é JSON válido continua respondendo `400`.
+
+  Isso importa além do logout, porque o corpo é lido **antes do roteamento**: com o parser padrão, uma URL errada respondia reclamando do corpo em vez de `404`, e em rota com campos obrigatórios o Zod nem chegava a rodar — o front não recebia a lista de campos faltando.
+
+- **A API não responde `500` para erro do cliente.** Falhas que nascem no próprio framework — corpo acima do limite (`413`), tipo de conteúdo não suportado (`415`) — respondem o status correto com mensagem em pt-BR. Front e desktop podem tratar `5xx` como "problema na API, vale retentar" e `4xx` como "a requisição precisa mudar".
 
 - A API mantém um **canal WebSocket permanente** com os Desktops das salas, na mesma aplicação e na mesma porta: `ws://<host>:<porta>/ws/computers`. É por ele que os eventos que nascem fora da máquina (sessão encerrada pelo cron, computador colocado em manutenção, sala inativada) vão chegar ao Desktop, sem polling.
 
