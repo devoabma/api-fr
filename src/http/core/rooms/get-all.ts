@@ -72,6 +72,9 @@ export async function getAllRooms(app: FastifyInstance) {
           description: true,
           inactive: true,
           employeesRooms: {
+            // Desligar funcionário é soft delete: o vínculo continua na tabela de junção. Sem este
+            // filtro, quem saiu da OAB seguiria listado como equipe da sala no painel.
+            where: { employees: { inactive: null } },
             select: {
               employees: {
                 select: {

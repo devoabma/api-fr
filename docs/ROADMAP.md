@@ -70,7 +70,7 @@
 
 ### Casos de uso (RF)
 - [x] Criar sala (`create.ts` — `POST /rooms/create`)
-- [~] Listar salas por papel (`get-all.ts` — `GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas via `getCurrentEmployee()`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados; sem paginação ainda)
+- [~] Listar salas por papel (`get-all.ts` — `GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas via `getCurrentEmployee()`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados **ativos** — quem foi desligado, soft delete via `employees.inactive`, some da equipe da sala; sem paginação ainda)
 - [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`)
 - [x] Inativar sala (`deactivate.ts` — `PATCH /rooms/deactivate/:id`)
 - [x] Ativar sala (`activate.ts` — `PATCH /rooms/activate/:id`)
