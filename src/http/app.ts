@@ -99,9 +99,16 @@ app.register(fastifyJwt, {
 })
 
 // Com `credentials: true` o navegador rejeita `origin: '*'`, então a origem precisa ser explícita.
+//
+// `methods` também precisa ser explícito: o default do @fastify/cors v11 são só os métodos
+// safelisted (GET, HEAD, POST). Sem a lista completa o preflight ainda responde 204, mas com
+// `access-control-allow-methods: GET,HEAD,POST` — o navegador lê isso e barra PATCH/PUT/DELETE
+// antes de mandar a requisição real, então o front toma erro de rede sem corpo e a API não
+// registra nada, porque a chamada nunca chegou aqui.
 app.register(fastifyCors, {
   origin: env.WEB_URL,
   credentials: true,
+  methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
 })
 
 app.register(fastifyCookie)

@@ -247,6 +247,8 @@ Demais regras:
 
   **O app desktop não é afetado.** CORS é uma regra que o *navegador* aplica antes de entregar a resposta à página; cliente que não manda o header `Origin` — desktop, Insomnia, `curl`, healthcheck do contêiner — nem é avaliado. Pelo mesmo motivo, **CORS não é controle de acesso**: quem protege a API continua sendo a autenticação, a autorização por papel e o rate limit. O canal WebSocket também fica de fora.
 
+  **Métodos liberados no preflight**: `GET`, `HEAD`, `POST`, `PUT`, `PATCH` e `DELETE`. A lista é declarada explicitamente porque o default do `@fastify/cors` são apenas os métodos safelisted (`GET`, `HEAD`, `POST`) — sem ela, toda rota de escrita do painel (editar funcionário, manutenção de computador, exclusão) era barrada pelo navegador **antes de sair**. O sintoma engana: o preflight responde `204` normalmente, o front recebe um erro de rede sem corpo e a API não registra nada, porque a requisição real nunca chegou.
+
   `WEB_URL` precisa ser a origem exata (esquema + host + porta), **sem barra no fim** — o header `Origin` nunca tem uma, e a comparação é byte a byte. A API corta barras finais sozinha e recusa subir com URL sem esquema, justamente porque a falha seria silenciosa: o bloqueio acontece no navegador e nada aparece no log.
 
 - **Requisição sem corpo é válida.** Axios e `fetch` mandam `Content-Type: application/json` mesmo quando não há corpo (`axios.post(url)` sem segundo argumento). A API usa parser próprio: corpo vazio chega às rotas como `{}` e quem decide se falta algo é o schema Zod da rota. Corpo que não é JSON válido continua respondendo `400`.
