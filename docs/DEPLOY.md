@@ -39,7 +39,7 @@ Build multi-stage (`node:24-slim`), 3 estágios:
 
 1. **base** — instala `openssl` (Prisma precisa disso presente *antes* do
    `pnpm install` pra detectar o engine certo — senão cai no fallback
-   `openssl-1.1.x`, incompatível) e fixa `pnpm@11.13.0` via Corepack.
+   `openssl-1.1.x`, incompatível) e fixa `pnpm@11.18.0` via Corepack.
 2. **deps** — `pnpm install --frozen-lockfile` (dev + prod) e `prisma generate`
    (via `postinstall`).
 3. **build** — roda `pnpm build` (tsup), gera `build/http/server.js` (ESM).

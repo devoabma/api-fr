@@ -92,9 +92,9 @@
 
 ### Regras de negócio (RN)
 - [x] Somente ADMIN cadastra/edita/exclui computadores (cadastro, edição e exclusão protegidos). Manutenção é operacional: ADMIN em qualquer máquina, funcionário comum nas de suas salas
-- [ ] Não liberar computador de sala inativa
-- [ ] Não liberar computador em manutenção
-- [ ] Não liberar computador já em uso
+- [x] Não liberar computador de sala inativa (`release-computer.ts` recusa com `400` quando `computer.room.inactive`, orientando a procurar a administração)
+- [x] Não liberar computador em manutenção (`release-computer.ts` recusa com `400` quando `computer.maintenance`, orientando a procurar a administração)
+- [x] Não liberar computador já em uso (`release-computer.ts` recusa com `400` quando `computer.inUse`, antes de abrir a nova sessão)
 
 ---
 
