@@ -152,6 +152,10 @@ O sistema pode gerar relatórios:
 - [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; paginação pendente).
 - [x] Colocar/retirar um computador de manutenção (`PATCH /computers/maintenance/:id` e `.../remove`; ADMIN em qualquer máquina, funcionário comum nas de suas salas).
 - [x] Liberar um computador manualmente pelo painel (mesma rota `POST /lawyers/release-computer`: o funcionário informa os dados do advogado(a) e o `macCode` da máquina, e a API destrava a estação pelo evento `session_started` do WebSocket).
+- [x] Saber quais estações estão conectadas (`GET /computers/online/:roomId?`; ADMIN vê todas, MEMBER só as salas vinculadas; a resposta traz **apenas** os computadores no canal `/ws/computers`, com `id`, `macCode`, `roomId` e `connectedAt` — quem não está na lista está desligado, sem rede ou com o Desktop fechado).
+  - A fonte é o registro em memória do WebSocket, não o banco: não há coluna de "online". Reiniciar a API zera a lista até os Desktops reconectarem.
+  - O painel usa isso para **bloquear a liberação antes de gravar a sessão**. Não substitui o `notified`: entre a consulta e o clique a estação pode cair, e aí a resposta da liberação continua sendo a última palavra.
+  - O atraso do heartbeat (`ping` a cada 30s) faz uma máquina desligada na tomada aparecer como conectada por até ~60s.
 
 #### ⚖️ Advogados (Lawyers)
 

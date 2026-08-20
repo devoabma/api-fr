@@ -32,6 +32,7 @@
   - [~] Eventos de negócio
     - [x] `session_closed` (`websocket/notifications.ts` — disparado por `close-session.ts` com `reason: manual` e pelo cron `auto-close-sessions` com `reason: expired`; leva `macCode` e `sessionId` para o Desktop conferir antes de fechar a tela)
     - [x] `session_started` (`websocket/notifications.ts` — disparado por `release-computer.ts` depois de gravar a sessão; é o que faz a liberação pelo painel destravar a máquina da sala, e o `notified` da resposta HTTP diz se a estação estava conectada)
+  - [x] Estações conectadas em HTTP (`GET /computers/online/:roomId?` — o registro em memória ganhou porta de saída, e o painel passa a barrar a liberação em máquina muda **antes** de gravar a sessão, em vez de descobrir pelo `notified`)
   - [ ] Snapshot no `register` (hoje quem estava offline não fica sabendo do que perdeu — a rede de segurança é o relógio do próprio Desktop)
 
 ---
