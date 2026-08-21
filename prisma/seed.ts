@@ -51,7 +51,7 @@ async function main() {
       cpf: env.CPF_ADMIN,
       email: env.EMAIL_ADMIN,
       tempPassword: password,
-      link: `${env.WEB_URL}/sign-in`,
+      link: `${env.WEB_URL}/auth/sign-in`,
     }),
   })
 

@@ -255,6 +255,16 @@ Demais regras:
 
   `WEB_URL` precisa ser a origem exata (esquema + host + porta), **sem barra no fim** — o header `Origin` nunca tem uma, e a comparação é byte a byte. A API corta barras finais sozinha e recusa subir com URL sem esquema, justamente porque a falha seria silenciosa: o bloqueio acontece no navegador e nada aparece no log.
 
+- **Os links dos e-mails apontam para rotas do front, não da API.** A API concatena `WEB_URL` com caminhos que só existem no `web-fr`:
+
+  | E-mail | Link |
+  | --- | --- |
+  | Cadastro de funcionário (inclui o admin do seed) | `${WEB_URL}/auth/sign-in` |
+  | Recuperação de senha | `${WEB_URL}/auth/reset-password?code=<code>` |
+  | Confirmação de troca de senha | `${WEB_URL}` (raiz — o front decide entre painel e login) |
+
+  **Renomear qualquer uma dessas rotas no front quebra o e-mail em silêncio**: a API responde com sucesso, o Resend entrega e nada aparece no log — só quem clica descobre, num 404. Dói mais em quem acabou de ser cadastrado (não tem senha para tentar outro caminho) e em quem pediu recuperação (o código expira em 5 min enquanto a pessoa tenta entender). O app desktop não é afetado: lá o funcionário digita o código, sem passar pelo link.
+
 - **Requisição sem corpo é válida.** Axios e `fetch` mandam `Content-Type: application/json` mesmo quando não há corpo (`axios.post(url)` sem segundo argumento). A API usa parser próprio: corpo vazio chega às rotas como `{}` e quem decide se falta algo é o schema Zod da rota. Corpo que não é JSON válido continua respondendo `400`.
 
   Isso importa além do logout, porque o corpo é lido **antes do roteamento**: com o parser padrão, uma URL errada respondia reclamando do corpo em vez de `404`, e em rota com campos obrigatórios o Zod nem chegava a rodar — o front não recebia a lista de campos faltando.

@@ -76,7 +76,7 @@ export async function createAccount(app: FastifyInstance) {
             cpf,
             email,
             tempPassword: password,
-            link: `${env.WEB_URL}/sign-in`,
+            link: `${env.WEB_URL}/auth/sign-in`,
           }),
         })
 

@@ -55,7 +55,7 @@ const allowDefaultingLawyersSchema = z
  *   `@fastify/cors` compara a string byte a byte, então `https://app.exemplo.com/`
  *   simplesmente nunca casa — e o sintoma é o front inteiro tomando erro de CORS
  *   sem nenhuma mensagem no log da API.
- * - **Links de e-mail** (`${WEB_URL}/sign-in`): com barra no fim viraria `//sign-in`.
+ * - **Links de e-mail** (`${WEB_URL}/auth/sign-in`): com barra no fim viraria `//auth/sign-in`.
  *
  * Nos dois casos o conserto é o mesmo: exigir URL válida e cortar as barras finais.
  */

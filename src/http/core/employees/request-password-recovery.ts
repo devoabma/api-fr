@@ -64,7 +64,7 @@ export async function requestPasswordRecovery(app: FastifyInstance) {
         react: ResetPasswordEmail({
           name: employee.name,
           code,
-          link: `${env.WEB_URL}/employees/reset-password?code=${code}`,
+          link: `${env.WEB_URL}/auth/reset-password?code=${code}`,
         }),
       })
 
