@@ -18,6 +18,7 @@ const getAllRoomsSchema = {
           standardTime: z.number(),
           description: z.string().nullable(),
           inactive: z.date().nullable(),
+          createdAt: z.date(),
           employeesRooms: z.array(
             z.object({
               employees: z.object({
@@ -71,6 +72,7 @@ export async function getAllRooms(app: FastifyInstance) {
           standardTime: true,
           description: true,
           inactive: true,
+          createdAt: true,
           employeesRooms: {
             // Desligar funcionário é soft delete: o vínculo continua na tabela de junção. Sem este
             // filtro, quem saiu da OAB seguiria listado como equipe da sala no painel.

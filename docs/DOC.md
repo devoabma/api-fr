@@ -140,6 +140,7 @@ O sistema pode gerar relatórios:
 - [x] Criar uma sala.
 - [x] Buscar as salas por papel (`GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas — a rota dedicada do membro foi removida).
   - A equipe devolvida em `employeesRooms` traz apenas funcionários **ativos**: desligar alguém é soft delete (`employees.inactive`) e o vínculo continua no banco, então a API é que filtra.
+  - Cada sala devolve também `createdAt` (data de cadastro), para o cliente exibir "criada em" e reordenar localmente sem perder a informação.
 - [x] Editar uma sala.
 - [x] Inativar uma sala.
 - [x] Ativar uma sala.
