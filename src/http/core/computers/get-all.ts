@@ -22,6 +22,7 @@ const getAllComputersSchema = {
           description: z.string(),
           inUse: z.boolean(),
           maintenance: z.date().nullable(),
+          createdAt: z.date(),
           room: z.object({
             id: z.cuid2(),
             name: z.string(),
@@ -61,12 +62,16 @@ export async function getAllComputers(app: FastifyInstance) {
             description: true,
             inUse: true,
             maintenance: true,
+            createdAt: true,
             room: {
               select: {
                 id: true,
                 name: true,
               },
             },
+          },
+          orderBy: {
+            createdAt: 'desc',
           },
         })
 

@@ -150,7 +150,7 @@ O sistema pode gerar relatórios:
 - [x] Cadastrar um computador.
 - [x] Editar um computador (`PATCH /computers/update/:id`; ADMIN-only, atualização parcial).
 - [x] Excluir um computador (`DELETE /computers/delete/:id`; ADMIN-only, recusa se em uso, remove sessões e impressões em cascata).
-- [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; paginação pendente).
+- [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; cada máquina traz `createdAt` e a lista vem ordenada por data de cadastro, mais recente primeiro; paginação pendente).
 - [x] Colocar/retirar um computador de manutenção (`PATCH /computers/maintenance/:id` e `.../remove`; ADMIN em qualquer máquina, funcionário comum nas de suas salas).
 - [x] Liberar um computador manualmente pelo painel (mesma rota `POST /lawyers/release-computer`: o funcionário informa os dados do advogado(a) e o `macCode` da máquina, e a API destrava a estação pelo evento `session_started` do WebSocket).
 - [x] Saber quais estações estão conectadas (`GET /computers/online/:roomId?`; ADMIN vê todas, MEMBER só as salas vinculadas; a resposta traz **apenas** os computadores no canal `/ws/computers`, com `id`, `macCode`, `roomId` e `connectedAt` — quem não está na lista está desligado, sem rede ou com o Desktop fechado).
