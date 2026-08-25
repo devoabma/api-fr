@@ -91,14 +91,30 @@ model Rooms {
 }
 
 model Computers {
-  id          String    @id @default(cuid())
-  macCode     String    @unique @map("mac_code")
-  description String
-  number      Int
-  inUse       Boolean   @default(false) @map("in_use")
-  maintenance DateTime?
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt() @map("updated_at")
+  id                   String    @id @default(cuid())
+  macCode              String    @unique @map("mac_code")
+  description          String
+  number               Int
+  inUse                Boolean   @default(false) @map("in_use")
+  maintenance          DateTime?
+  // Última versão do Desktop que a estação informou no `register` do WebSocket.
+  //
+  // Texto e nada além disso: "1.0.7" não é número e não se ordena por comparação alfabética
+  // ("1.0.10" viria antes de "1.0.7"). O teto de 40 acompanha o `MAX_VERSION_LENGTH` do protocolo.
+  //
+  // NULL é dado legítimo, não pendência: significa que a máquina nunca informou — porque nunca
+  // conectou desde este deploy, ou porque o interruptor local de envio está desligado. Registro
+  // sem o campo NUNCA apaga o valor guardado, que é a única pista que o suporte tem da máquina.
+  appVersion           String?   @map("app_version") @db.VarChar(40)
+  // Quando ela informou — NÃO quando esteve online pela última vez.
+  //
+  // A versão só viaja no `register`, ou seja, a cada conexão. Uma estação um mês no ar sem cair
+  // tem carimbo de um mês atrás e está online agora: ler isto como "visto por último" faria o
+  // painel mandar ligar para uma unidade que está funcionando. Quem responde "está conectada?"
+  // é o mapa em memória do canal, exposto por `GET /computers/online/:roomId?`.
+  appVersionReportedAt DateTime? @map("app_version_reported_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt() @map("updated_at")
 
   room   Rooms  @relation(fields: [roomId], references: [id])
   roomId String @map("room_id")

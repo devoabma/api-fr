@@ -54,8 +54,9 @@ const registerMessageSchema = z.object({
    * desconhecidas, então o campo já passaria calado — mas ficaria refém de alguém trocar o
    * schema por `.strict()` um dia e derrubar o canal de toda estação que envia a versão.
    *
-   * Hoje só aparece no log do registro. Persistir e mostrar no painel é passo seguinte, e
-   * não muda nada deste lado.
+   * Ausência é caso previsto, não defeito: o Desktop tem um interruptor local de envio, e
+   * desligado o campo sai fora do JSON — não vem vazio nem nulo. Quer dizer "esta máquina foi
+   * configurada para não informar", e o servidor trata isso preservando o que já sabia.
    */
   version: z
     .string()
@@ -64,7 +65,11 @@ const registerMessageSchema = z.object({
     // Sobra só o que parece número de versão. Sanear em vez de recusar é proposital: o valor
     // é acessório, e derrubar o registro da estação por causa dele seria o pior dos mundos.
     // De quebra fecha a porta para quebra de linha forjar entrada falsa no log.
-    .transform(value => value.replace(/[^\w.+-]/g, ''))
+    //
+    // O `|| undefined` é o que impede o saneamento de fabricar valor: um `"###"` sobraria como
+    // string vazia e, sem isto, seria gravada no cadastro como se fosse a versão da máquina.
+    // Sobrou nada = a estação não informou nada.
+    .transform(value => value.replace(/[^\w.+-]/g, '') || undefined)
     .optional(),
 })
 

@@ -23,6 +23,19 @@ const getAllComputersSchema = {
           inUse: z.boolean(),
           maintenance: z.date().nullable(),
           createdAt: z.date(),
+          /**
+           * Última versão do Desktop informada pela estação, como texto (`"1.0.7"`).
+           *
+           * `null` significa que a máquina nunca informou — ou porque não conectou desde que a
+           * API passou a guardar, ou porque o envio está desligado na configuração dela. É o
+           * campo que responde "quantas estações ainda estão na versão que quero tirar de campo".
+           */
+          appVersion: z.string().nullable(),
+          /**
+           * Quando a estação informou a versão. Não confundir com "vista por último": ela só se
+           * apresenta ao conectar, então máquina que fica no ar sem cair mantém carimbo antigo.
+           */
+          appVersionReportedAt: z.date().nullable(),
           room: z.object({
             id: z.cuid2(),
             name: z.string(),
@@ -63,6 +76,8 @@ export async function getAllComputers(app: FastifyInstance) {
             inUse: true,
             maintenance: true,
             createdAt: true,
+            appVersion: true,
+            appVersionReportedAt: true,
             room: {
               select: {
                 id: true,

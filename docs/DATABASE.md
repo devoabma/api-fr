@@ -143,6 +143,8 @@ Computadores físicos disponíveis em uma sala.
 | `number`          | Int       | `number`             | Número/posição do computador na sala.                 |
 | `inUse`           | Boolean   | `in_use`             | Está em uso agora? **default `false`**.               |
 | `maintenance`     | DateTime? | `maintenance`        | Marcado se estiver em manutenção.                     |
+| `appVersion`      | String?   | `app_version`        | `VARCHAR(40)`. Última versão do Desktop informada pela estação no `register`. Texto (`"1.0.7"`), nunca número. |
+| `appVersionReportedAt` | DateTime? | `app_version_reported_at` | **Quando ela informou**, não quando esteve online. |
 | `createdAt`       | DateTime  | `created_at`         | `@default(now())`.                                    |
 | `updatedAt`       | DateTime  | `updated_at`         | `@updatedAt`.                                         |
 | `roomId`          | String    | `room_id`            | FK → `Rooms.id`.                                      |
@@ -155,6 +157,11 @@ Computadores físicos disponíveis em uma sala.
 - `printers` → `Printers[]` (1:N).
 
 > 🔒 **Regra de negócio — um advogado não usa dois computadores ao mesmo tempo**: garantida pelo `@unique` em `currentLawyerId`. No Postgres, várias linhas com `NULL` são permitidas (máquinas livres), mas só pode existir **um** computador por advogado não-nulo. **A lógica da aplicação é responsável por limpar o campo (`currentLawyerId = null`) ao encerrar a sessão** — caso contrário a máquina fica "presa" àquele advogado.
+
+> 📦 **Sobre `appVersion` / `appVersionReportedAt`** — três leituras erradas que o par convida e que o modelo recusa:
+> 1. **Não é heartbeat.** A versão só viaja no `register`, ou seja, **a cada conexão**. Uma estação um mês no ar sem cair informa uma vez só, no começo do mês: o carimbo antigo dela não significa nada de errado. Quem está online agora é o mapa em memória do canal (`GET /computers/online/:roomId?`), nunca este campo.
+> 2. **O valor pode diminuir.** O Desktop volta sozinho ao executável anterior quando a atualização falha três vezes, então `1.0.7` hoje e `1.0.6` amanhã é comportamento legítimo — e o sinal mais valioso do parque. A gravação é crua, sem comparar com o que já estava.
+> 3. **`NULL` não é pendência.** Existe um interruptor local de envio; desligado, o campo sai fora do JSON. `NULL` quer dizer "nunca informou" (nunca conectou desde a migração, ou está configurada para não informar), e **registro sem o campo nunca apaga o valor guardado**.
 
 ---
 

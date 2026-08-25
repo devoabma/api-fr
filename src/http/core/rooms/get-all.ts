@@ -37,6 +37,14 @@ const getAllRoomsSchema = {
               description: z.string(),
               inUse: z.boolean(),
               maintenance: z.date().nullable(),
+              /** Última versão do Desktop informada pela estação. `null` = ela nunca informou. */
+              appVersion: z.string().nullable(),
+              /**
+               * Quando a estação informou a versão — não quando esteve online pela última vez.
+               * Ela só se apresenta ao conectar, então uma máquina semanas no ar mantém um
+               * carimbo antigo. Quem está conectado agora é `GET /computers/online/:roomId?`.
+               */
+              appVersionReportedAt: z.date().nullable(),
             })
           ),
         })
@@ -97,6 +105,8 @@ export async function getAllRooms(app: FastifyInstance) {
               description: true,
               inUse: true,
               maintenance: true,
+              appVersion: true,
+              appVersionReportedAt: true,
             },
           },
         },

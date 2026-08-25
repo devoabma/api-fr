@@ -29,6 +29,7 @@
   - [x] Infraestrutura: registro por `{ "type": "register", "macCode": "..." }`, mapa em memória `macCode → socket` (`connections.ts`), protocolo tipado por `type` com Zod (`protocol.ts`), heartbeat de ping/pong a cada 30s, limpeza na desconexão e no shutdown
   - [x] Rótulo da estação no `registered` (`roomName` e `number` do cadastro — o instalador não precisa mais saber a sala, e remanejar um computador no painel chega à tela na reconexão; ausentes quando o MAC não está cadastrado, e aí o Desktop cai na configuração local)
   - [x] UF da estação no `registered` (`rooms.uf` — a sala passou a guardar o estado, e o Desktop grava a sigla em disco: é o que permite publicar versão dirigida a um estado. Vem junto do rótulo, nunca sozinha nem como string vazia)
+  - [x] Versão do Desktop guardada por estação (`computers.appVersion` + `computers.appVersionReportedAt` — o `register` já trazia o campo e ele só ia para o log; agora o painel responde em que versão está cada sala e se a publicação chegou, inclusive para máquina desligada. Gravação crua, porque o cliente faz rollback e a versão pode legitimamente diminuir; campo ausente preserva o valor guardado, porque há interruptor local de envio; o carimbo é de **quando informou**, não de quando esteve online — a versão só viaja na conexão)
   - [ ] Autenticação da estação (TOFU: token opaco no header `Authorization`, hoje o `macCode` é só uma afirmação do cliente — gancho pronto em `websocket/authorization.ts`)
   - [~] Eventos de negócio
     - [x] `session_closed` (`websocket/notifications.ts` — disparado por `close-session.ts` com `reason: manual` e pelo cron `auto-close-sessions` com `reason: expired`; leva `macCode` e `sessionId` para o Desktop conferir antes de fechar a tela)
@@ -73,7 +74,7 @@
 
 ### Casos de uso (RF)
 - [x] Criar sala (`create.ts` — `POST /rooms/create`; corpo aceita `uf`, validada contra as 27 siglas e assumida como `MA` quando omitida — o padrão vive no Zod, não no banco, então o cadastro pode discordar sem migração)
-- [~] Listar salas por papel (`get-all.ts` — `GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas via `getCurrentEmployee()`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados **ativos** — quem foi desligado, soft delete via `employees.inactive`, some da equipe da sala; devolve `createdAt` e `uf` da sala; sem paginação ainda)
+- [~] Listar salas por papel (`get-all.ts` — `GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas via `getCurrentEmployee()`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados **ativos** — quem foi desligado, soft delete via `employees.inactive`, some da equipe da sala; devolve `createdAt` e `uf` da sala e a versão do Desktop de cada estação (`appVersion` + `appVersionReportedAt`, para o card do painel mostrar em que versão a máquina está); sem paginação ainda)
 - [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`; `uf` opcional e sem padrão aqui: campo ausente mantém o estado atual)
 - [x] Inativar sala (`deactivate.ts` — `PATCH /rooms/deactivate/:id`)
 - [x] Ativar sala (`activate.ts` — `PATCH /rooms/activate/:id`)
@@ -89,7 +90,7 @@
 - [x] Cadastrar computador (`create.ts` — `POST /computers/create`; MAC normalizado/único, `number` e `description` únicos por sala)
 - [x] Editar computador (`update.ts` — `PATCH /computers/update/:id`; atualização parcial restrita a ADMIN, MAC normalizado/único e `number`/`description` únicos na sala efetiva)
 - [x] Excluir computador (`delete.ts` — `DELETE /computers/delete/:id`; restrito a ADMIN, recusa com `400` se em uso, remove histórico de sessões e impressões em cascata)
-- [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; devolve `createdAt` da máquina e ordena por data de cadastro desc; paginação ainda pendente)
+- [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; devolve `createdAt` da máquina e a última versão do Desktop informada por ela (`appVersion` + `appVersionReportedAt`, para responder quantas estações ainda estão numa versão que se quer tirar de campo) e ordena por data de cadastro desc; paginação ainda pendente)
 - [x] Colocar/retirar computador de manutenção (`put-into-maintenance.ts` — `PATCH /computers/maintenance/:id`; e `take-out-of-maintenance.ts` — `PATCH /computers/maintenance/:id/remove`; ADMIN em qualquer máquina e funcionário comum nas de suas salas; ao colocar recusa se já em manutenção ou em uso, ao retirar recusa se não estava em manutenção)
 - [x] Liberar computador manualmente (funcionário) — sem rota nova: o painel usa a mesma `POST /lawyers/release-computer` informando o `macCode` da máquina escolhida, e o evento `session_started` destrava a estação (o `notified` da resposta avisa quando o Desktop está offline)
 

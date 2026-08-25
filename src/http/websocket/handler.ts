@@ -60,6 +60,41 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
     }
   }
 
+  /**
+   * Guarda a última versão que a estação informou.
+   *
+   * Três decisões que não são óbvias pelo formato da mensagem:
+   *
+   * 1. **Ausência não apaga.** Campo fora do JSON significa "configurada para não informar",
+   *    e não "deu problema". Zerar a coluna aí destruiria o único dado que o suporte tem sobre
+   *    a máquina — então o registro sem versão sai daqui sem tocar em nada.
+   *
+   * 2. **Grava o que chegou, sem comparar.** Quando uma atualização falha três vezes o cliente
+   *    volta sozinho para o executável anterior, então uma estação pode legitimamente reportar
+   *    `1.0.7` hoje e `1.0.6` amanhã. Qualquer lógica "só para frente" transformaria justamente
+   *    o caso mais importante de enxergar em dado errado.
+   *
+   * 3. **`updateMany` e não `update`.** O canal aceita MAC que não está cadastrado; `update`
+   *    responderia com `P2025` nesse caso, enquanto `updateMany` afeta zero linhas e cala.
+   *
+   * Nunca lança, pelo mesmo motivo de `findComputerLabel`: o registro já aconteceu, e o banco
+   * fora do ar não pode custar o canal da máquina.
+   */
+  async function recordReportedVersion(macCode: string, version: string | undefined): Promise<void> {
+    if (!version) {
+      return
+    }
+
+    try {
+      await prisma.computers.updateMany({
+        where: { macCode },
+        data: { appVersion: version, appVersionReportedAt: new Date() },
+      })
+    } catch (err) {
+      console.error(`[WS ❌] Falha ao gravar a versão informada por ${macCode}; registro segue normalmente:`, err)
+    }
+  }
+
   async function handleRegister(message: RegisterMessage) {
     const macCode = formattedCodeMac(message.macCode)
 
@@ -95,7 +130,11 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
     // Tudo que decide a identidade desta conexão já rodou de forma síncrona acima: o `await`
     // abaixo é o primeiro ponto de suspensão, então nem o timeout de registro nem uma segunda
     // mensagem conseguem se intrometer no meio do processo.
-    const label = await findComputerLabel(macCode)
+    //
+    // As duas idas ao banco correm juntas de propósito: a versão é acessória e não pode atrasar
+    // o ack, que é o que destrava a tela da estação. Nenhuma das duas rejeita, então o
+    // `Promise.all` aqui não tem como falhar por uma delas.
+    const [label] = await Promise.all([findComputerLabel(macCode), recordReportedVersion(macCode, message.version)])
 
     // Enquanto a consulta corria, uma reconexão pode ter assumido a chave — o ack pertence
     // à conexão que está no mapa, não a esta.

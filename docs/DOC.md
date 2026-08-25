@@ -283,7 +283,16 @@ Demais regras:
      { "type": "register", "macCode": "AA-BB-CC-DD-EE-01", "version": "1.0.1" }
      ```
 
-     O `version` (versão do Desktop instalado) é **opcional** e serve só para o log do servidor por enquanto. Campos extras que a API não conhece são ignorados, nunca recusados — o canal não cai por causa deles.
+     O `version` (versão do Desktop instalado) é **opcional** e a API o **guarda no cadastro da máquina** (`computers.appVersion` + `computers.appVersionReportedAt`), além de escrevê-lo no log. É o que permite o painel responder em que versão está cada sala e se a publicação de ontem chegou onde deveria — inclusive para máquina desligada, que fica com o que informou da última vez que esteve no ar. Campos extras que a API não conhece são ignorados, nunca recusados — o canal não cai por causa deles.
+
+     Quatro regras do campo, todas com consequência do lado do servidor:
+
+     | Regra | O que a API faz |
+     | --- | --- |
+     | Só vai no `register`, nunca periodicamente | Guarda "última versão informada" com o carimbo de quando. Ausência de mensagem **não** significa máquina sumida — quem responde isso é `GET /computers/online/:roomId?` |
+     | A versão pode **diminuir** (rollback do cliente após três falhas) | Grava o que chegou, sem comparar com o valor anterior. Nada de "só para frente" |
+     | O campo pode **sair fora do JSON** (interruptor local desligado) | Preserva o último valor conhecido e não mexe no carimbo. Ausência não é erro nem apagamento |
+     | É **texto** (`"1.0.7"`, sem o `V` da tela) | Coluna `VARCHAR(40)`, saneada para `[\w.+-]`. Sobrou string vazia, vale como não informada |
 
   3. Aguardar a confirmação da API, que **já traz o rótulo da estação**:
 
