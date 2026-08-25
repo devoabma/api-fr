@@ -101,14 +101,15 @@ export type ServerMessage =
       /**
        * Confirma que o servidor reconheceu a estação e devolve o rótulo dela.
        *
-       * `roomName` e `number` saem do cadastro do computador: é o servidor que sabe onde a
-       * máquina está, então o instalador não precisa mais que alguém digite a sala à mão em
-       * cada quiosque, e um remanejamento feito no painel chega sozinho na tela na conexão
-       * seguinte.
+       * `roomName`, `number` e `uf` saem do cadastro do computador: é o servidor que sabe
+       * onde a máquina está, então o instalador não precisa mais que alguém digite a sala nem
+       * o estado à mão em cada quiosque, e um remanejamento feito no painel chega sozinho na
+       * tela na conexão seguinte.
        *
-       * Os dois campos são opcionais **no protocolo** porque o canal aceita MAC que ainda
+       * Os três campos são opcionais **no protocolo** porque o canal aceita MAC que ainda
        * não está cadastrado (e porque uma falha de banco não pode custar o registro): nesse
-       * caso o Desktop cai na configuração local, como já fazia.
+       * caso o Desktop cai na configuração local, como já fazia. Vêm sempre juntos — a UF é
+       * NOT NULL no cadastro da sala —, então nunca chega sala sem estado.
        */
       type: 'registered'
       macCode: string
@@ -117,6 +118,14 @@ export type ServerMessage =
       roomName?: string
       /** Número do computador dentro da sala. Ausente quando o MAC não está cadastrado. */
       number?: number
+      /**
+       * Sigla do estado da sala, sempre em maiúsculas (`"MA"`).
+       *
+       * O Desktop grava em disco — diferente do rótulo da sala, que só vive em memória —
+       * porque a decisão de atualizar é tomada no arranque, antes de o canal conectar: a UF
+       * recebida vale a partir da execução seguinte. Chave ausente nunca significa `""`.
+       */
+      uf?: string
     }
   | { type: 'error'; code: WsErrorCode; message: string }
   | {

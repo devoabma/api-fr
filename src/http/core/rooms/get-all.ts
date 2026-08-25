@@ -15,6 +15,7 @@ const getAllRoomsSchema = {
         z.object({
           id: z.cuid2(),
           name: z.string(),
+          uf: z.string(),
           standardTime: z.number(),
           description: z.string().nullable(),
           inactive: z.date().nullable(),
@@ -69,6 +70,7 @@ export async function getAllRooms(app: FastifyInstance) {
         select: {
           id: true,
           name: true,
+          uf: true,
           standardTime: true,
           description: true,
           inactive: true,

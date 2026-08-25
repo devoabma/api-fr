@@ -30,16 +30,20 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
   console.log('[WS 🔌] Nova conexão aberta, aguardando registro...')
 
   /**
-   * Busca o rótulo da estação (sala e número) no cadastro.
+   * Busca o rótulo da estação (sala, número e UF) no cadastro.
    *
    * Nunca lança: o registro já aconteceu quando isto roda, e uma indisponibilidade do banco
    * não pode custar o canal da máquina. Sem o rótulo o Desktop cai na configuração local.
+   *
+   * Os três campos andam juntos de propósito: como `rooms.uf` é NOT NULL, "veio a sala mas
+   * não veio a UF" não existe. Ausência no `registered` significa uma coisa só — MAC fora do
+   * cadastro (ou banco fora do ar) — e o Desktop trata os três da mesma forma.
    */
-  async function findComputerLabel(macCode: string): Promise<{ roomName: string; number: number } | null> {
+  async function findComputerLabel(macCode: string): Promise<{ roomName: string; number: number; uf: string } | null> {
     try {
       const computer = await prisma.computers.findUnique({
         where: { macCode },
-        select: { number: true, room: { select: { name: true } } },
+        select: { number: true, room: { select: { name: true, uf: true } } },
       })
 
       if (!computer) {
@@ -48,7 +52,7 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
         return null
       }
 
-      return { roomName: computer.room.name, number: computer.number }
+      return { roomName: computer.room.name, number: computer.number, uf: computer.room.uf }
     } catch (err) {
       console.error(`[WS ❌] Falha ao buscar o cadastro de ${macCode}; registrado sem sala e número:`, err)
 
@@ -107,7 +111,7 @@ export function handleComputerConnection(socket: WebSocket, _request: FastifyReq
     })
 
     console.log(
-      `[WS ✅] Computador ${macCode} registrado${label ? ` em ${label.roomName} (nº ${label.number})` : ''}` +
+      `[WS ✅] Computador ${macCode} registrado${label ? ` em ${label.roomName}/${label.uf} (nº ${label.number})` : ''}` +
         `${message.version ? ` — Desktop v${message.version}` : ''} (${computerConnections.size} conectado(s)).`
     )
   }

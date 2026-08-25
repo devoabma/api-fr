@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { BadRequestError } from '@/http/_errors/bad-request'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
+import { ufSchema } from '@/utils/validations/uf'
 
 const createRoomSchema = {
   tags: ['rooms'],
@@ -12,6 +13,9 @@ const createRoomSchema = {
   security: [{ bearerAuth: [] }],
   body: z.object({
     name: z.string().trim().nonempty('Nome obrigatório'),
+    // Padrão no Zod, não no banco: o painel que ainda não manda o campo continua cadastrando
+    // sala no Maranhão — que é onde estão todas — sem exigir deploy casado dos dois lados.
+    uf: ufSchema.default('MA'),
     standardTime: z
       .number('Tempo padrão obrigatório')
       .int('Tempo padrão deve ser um inteiro')
@@ -38,7 +42,7 @@ export async function createRoom(app: FastifyInstance) {
       async (request, reply) => {
         await request.checkIfEmployeeIsAdmin()
 
-        const { name, standardTime, description } = request.body
+        const { name, uf, standardTime, description } = request.body
 
         const uppercaseName = name.toUpperCase()
 
@@ -58,6 +62,7 @@ export async function createRoom(app: FastifyInstance) {
           data: {
             name: uppercaseName,
             slug,
+            uf,
             standardTime,
             description,
           },

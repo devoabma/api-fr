@@ -72,6 +72,11 @@ model Rooms {
   id           String    @id @default(cuid())
   name         String    @unique
   slug         String    @unique
+  // Estado onde a sala fica. Obrigatório e sem default no banco: é o servidor que informa a
+  // UF a cada estação no registro do WebSocket, e um default silencioso repetiria o erro que
+  // o instalador cometia — campo pré-preenchido que ninguém confere. O valor padrão vive no
+  // schema Zod da rota de cadastro, onde o cliente ainda pode discordar.
+  uf           String    @db.Char(2)
   // Tempo padrão em minutos
   standardTime Int       @default(180) @map("standard_time")
   description  String?

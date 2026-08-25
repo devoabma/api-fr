@@ -103,6 +103,7 @@ Salas que contêm os computadores.
 | `id`           | String    | `id`              | PK, CUID.                                               |
 | `name`         | String    | `name`            | **Único**.                                             |
 | `slug`         | String    | `slug`            | **Único** — identificador amigável p/ URL.            |
+| `uf`           | String    | `uf`              | `CHAR(2)`, **obrigatório e sem default no banco** — sigla do estado da sala. Validada contra as 27 UFs no Zod, que aplica `MA` como padrão no cadastro. Vai para a estação no `registered` do WebSocket. |
 | `standardTime` | Int       | `standard_time`   | Tempo padrão de uso em **minutos**; **default 180**.   |
 | `description`  | String?   | `description`     | Descrição opcional.                                    |
 | `inactive`     | DateTime? | `inactive`        | **Soft delete**.                                       |

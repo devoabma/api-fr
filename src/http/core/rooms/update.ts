@@ -6,6 +6,7 @@ import { BadRequestError } from '@/http/_errors/bad-request'
 import { NotFoundError } from '@/http/_errors/not-found'
 import { auth } from '@/http/middleware/auth'
 import { prisma } from '@/lib/prisma'
+import { ufSchema } from '@/utils/validations/uf'
 
 const updateRoomSchema = {
   tags: ['rooms'],
@@ -16,6 +17,9 @@ const updateRoomSchema = {
   }),
   body: z.object({
     name: z.string().trim().optional(),
+    // Sem `.default()` aqui: no update, campo ausente significa "não mexe". Um padrão silencioso
+    // devolveria toda sala de outro estado para 'MA' a cada edição de nome.
+    uf: ufSchema.optional(),
     standardTime: z
       .number('Tempo padrão obrigatório')
       .int('Tempo padrão deve ser um inteiro')
@@ -48,7 +52,7 @@ export async function updateRoom(app: FastifyInstance) {
         await request.checkIfEmployeeIsAdmin()
 
         const { id } = request.params
-        const { name, standardTime, description } = request.body
+        const { name, uf, standardTime, description } = request.body
 
         const room = await prisma.rooms.findUnique({
           where: { id },
@@ -62,9 +66,11 @@ export async function updateRoom(app: FastifyInstance) {
         const dataToUpdate: {
           name?: string
           slug?: string
+          uf?: string
           standardTime?: number
           description?: string | null
         } = {
+          ...(uf && { uf }),
           ...(standardTime && { standardTime }),
           // !== undefined: distingue "não enviou" (mantém) de "enviou ''/null" (limpa).
           ...(description !== undefined && { description }),

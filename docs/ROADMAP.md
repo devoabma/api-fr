@@ -28,6 +28,7 @@
 - [~] WebSocket com os Desktops das salas (`src/http/websocket/` — `@fastify/websocket` na mesma app e mesma porta, endpoint `ws://<host>:<porta>/ws/computers`)
   - [x] Infraestrutura: registro por `{ "type": "register", "macCode": "..." }`, mapa em memória `macCode → socket` (`connections.ts`), protocolo tipado por `type` com Zod (`protocol.ts`), heartbeat de ping/pong a cada 30s, limpeza na desconexão e no shutdown
   - [x] Rótulo da estação no `registered` (`roomName` e `number` do cadastro — o instalador não precisa mais saber a sala, e remanejar um computador no painel chega à tela na reconexão; ausentes quando o MAC não está cadastrado, e aí o Desktop cai na configuração local)
+  - [x] UF da estação no `registered` (`rooms.uf` — a sala passou a guardar o estado, e o Desktop grava a sigla em disco: é o que permite publicar versão dirigida a um estado. Vem junto do rótulo, nunca sozinha nem como string vazia)
   - [ ] Autenticação da estação (TOFU: token opaco no header `Authorization`, hoje o `macCode` é só uma afirmação do cliente — gancho pronto em `websocket/authorization.ts`)
   - [~] Eventos de negócio
     - [x] `session_closed` (`websocket/notifications.ts` — disparado por `close-session.ts` com `reason: manual` e pelo cron `auto-close-sessions` com `reason: expired`; leva `macCode` e `sessionId` para o Desktop conferir antes de fechar a tela)
@@ -71,9 +72,9 @@
 ## 2. Salas (Rooms)
 
 ### Casos de uso (RF)
-- [x] Criar sala (`create.ts` — `POST /rooms/create`)
-- [~] Listar salas por papel (`get-all.ts` — `GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas via `getCurrentEmployee()`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados **ativos** — quem foi desligado, soft delete via `employees.inactive`, some da equipe da sala; devolve `createdAt` da sala; sem paginação ainda)
-- [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`)
+- [x] Criar sala (`create.ts` — `POST /rooms/create`; corpo aceita `uf`, validada contra as 27 siglas e assumida como `MA` quando omitida — o padrão vive no Zod, não no banco, então o cadastro pode discordar sem migração)
+- [~] Listar salas por papel (`get-all.ts` — `GET /rooms/get-all`; ADMIN vê todas inclusive inativas, MEMBER vê apenas as próprias salas ativas via `getCurrentEmployee()`; com computadores, disponibilidade `inUse`/`maintenance` e funcionários vinculados **ativos** — quem foi desligado, soft delete via `employees.inactive`, some da equipe da sala; devolve `createdAt` e `uf` da sala; sem paginação ainda)
+- [x] Editar sala (`update.ts` — `PATCH /rooms/update/:id`; `uf` opcional e sem padrão aqui: campo ausente mantém o estado atual)
 - [x] Inativar sala (`deactivate.ts` — `PATCH /rooms/deactivate/:id`)
 - [x] Ativar sala (`activate.ts` — `PATCH /rooms/activate/:id`)
 

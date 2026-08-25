@@ -293,7 +293,8 @@ Demais regras:
        "macCode": "AA-BB-CC-DD-EE-01",
        "connectedAt": "2026-08-09T18:00:00.000Z",
        "roomName": "Sala Fórum",
-       "number": 10
+       "number": 10,
+       "uf": "MA"
      }
      ```
 
@@ -301,10 +302,13 @@ Demais regras:
      | --- | --- |
      | `roomName` | Nome da sala a que o computador pertence, direto do cadastro |
      | `number` | Número do computador dentro da sala |
+     | `uf` | Sigla do estado da sala, sempre em maiúsculas — sai de `rooms.uf` |
 
-     **O Desktop deve exibir o que vier daqui**, em vez do que estiver no arquivo local: quem sabe onde a máquina está é o servidor. Assim a instalação de um quiosque novo não exige saber a sala (basta cadastrar o computador no painel), e um remanejamento feito no painel aparece sozinho na tela, na conexão seguinte.
+     **O Desktop deve exibir o que vier daqui**, em vez do que estiver no arquivo local: quem sabe onde a máquina está é o servidor. Assim a instalação de um quiosque novo não exige saber a sala nem o estado (basta cadastrar o computador no painel), e um remanejamento feito no painel aparece sozinho na tela, na conexão seguinte.
 
-     Os dois campos **podem não vir** — MAC ainda não cadastrado ou indisponibilidade do banco no instante do registro. Nesse caso o registro acontece normalmente e o Desktop cai na configuração local.
+     A `uf` tem um uso a mais que os outros dois: é o que permite publicar versão do Desktop dirigida a um estado. Por isso o Desktop **grava a UF em disco** (diferente do rótulo da sala, que pode viver só em memória) — a decisão de atualizar é tomada no arranque, antes de o canal conectar, então a UF recebida vale a partir da execução seguinte. Máquina recém-instalada que nunca conectou não tem UF e não casa com publicação por estado; ela segue recebendo as ondas por percentual e passa a casar depois do primeiro registro.
+
+     Os três campos **podem não vir** — MAC ainda não cadastrado ou indisponibilidade do banco no instante do registro. Nesse caso o registro acontece normalmente e o Desktop cai na configuração local. Eles vêm **sempre juntos**: como `rooms.uf` é obrigatório no banco, não existe resposta com sala e sem estado. A chave ausente nunca é substituída por `""`.
 
   4. Tratar o erro, que **não fecha a conexão** — corrigir a mensagem e reenviar:
 
