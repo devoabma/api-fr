@@ -51,7 +51,7 @@
 - [x] Enviar e-mail para redefinir senha (`request-password-recovery.ts` — `POST /employees/password-recovery`)
 - [x] Enviar e-mail ao funcionário quando o ADM o cadastrar
 - [x] Links dos e-mails apontando para as rotas reais do front (`/auth/sign-in` e `/auth/reset-password?code=...`, também no `prisma/seed.ts`. São caminhos de outro repositório: se o `web-fr` renomear, o e-mail quebra em silêncio — a API responde com sucesso e o 404 só aparece para quem clica)
-- [~] Listar todos os funcionários (`get-all.ts` — `GET /employees/get-all`; paginação ainda pendente)
+- [~] Listar todos os funcionários (`get-all.ts` — `GET /employees/get-all`; devolve `createdAt` de cada funcionário e ordena por data de cadastro desc; paginação ainda pendente)
 - [x] Inativar funcionário (`deactivate.ts` — `PATCH /employees/deactivate/:id`)
 - [x] Ativar funcionário (`activate.ts` — `PATCH /employees/activate/:id`)
 - [x] Alterar funcionário (`update.ts` — `PATCH /employees/update/:id`)

@@ -20,6 +20,7 @@ const getAllEmployeesSchema = {
           imageUrl: z.string().nullable(),
           role: z.enum(['MEMBER', 'ADMIN']),
           inactive: z.date().nullable(),
+          createdAt: z.date(),
         })
       ),
     }),
@@ -47,6 +48,10 @@ export async function getAllEmployees(app: FastifyInstance) {
             imageUrl: true,
             role: true,
             inactive: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
           },
         })
 
