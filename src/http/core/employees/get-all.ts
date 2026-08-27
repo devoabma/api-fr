@@ -21,6 +21,17 @@ const getAllEmployeesSchema = {
           role: z.enum(['MEMBER', 'ADMIN']),
           inactive: z.date().nullable(),
           createdAt: z.date(),
+          employeesRooms: z.array(
+            z.object({
+              rooms: z.object({
+                id: z.cuid2(),
+                name: z.string(),
+                uf: z.string(),
+                /** Sala desativada continua vinculada; cabe ao cliente sinalizar isso na tela. */
+                inactive: z.date().nullable(),
+              }),
+            })
+          ),
         })
       ),
     }),
@@ -49,6 +60,23 @@ export async function getAllEmployees(app: FastifyInstance) {
             role: true,
             inactive: true,
             createdAt: true,
+            employeesRooms: {
+              select: {
+                rooms: {
+                  select: {
+                    id: true,
+                    name: true,
+                    uf: true,
+                    inactive: true,
+                  },
+                },
+              },
+              orderBy: {
+                rooms: {
+                  name: 'asc',
+                },
+              },
+            },
           },
           orderBy: {
             createdAt: 'desc',

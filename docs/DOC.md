@@ -126,7 +126,7 @@ O sistema pode gerar relatórios:
 - [x] Redefinir a senha.
 - [x] Enviar um e-mail para redefinir senha.
 - [x] Enviar um e-mail ao funcionário quando o ADM o cadastrar.
-- [x] Listar todos os funcionários cadastrados (`GET /employees/get-all`; ADMIN-only, cada funcionário traz `createdAt` e a lista vem ordenada por data de cadastro, mais recente primeiro).
+- [x] Listar todos os funcionários cadastrados (`GET /employees/get-all`; ADMIN-only, cada funcionário traz `createdAt` e as salas vinculadas em `employeesRooms` — inclusive as inativas, distinguidas por `inactive` —, e a lista vem ordenada por data de cadastro, mais recente primeiro).
 - [x] Inativar um funcionário.
 - [x] Ativar um funcionário.
 - [x] Alterar um funcionário.
