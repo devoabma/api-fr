@@ -24,6 +24,12 @@ const createAccountSchema = {
   response: {
     201: z.object({
       message: z.string(),
+      /**
+       * Devolvido para que o painel consiga encadear a vinculação com salas logo após o cadastro
+       * (`/employees/link-with-rooms` exige o `employeeId`). Sem isso, o front só teria o CPF em mãos
+       * e precisaria varrer a listagem para descobrir quem acabou de criar.
+       */
+      employeeId: z.cuid2(),
     }),
     400: badRequestSchema,
   },
@@ -58,13 +64,14 @@ export async function createAccount(app: FastifyInstance) {
 
         const passwordHash = await hash(password, 8)
 
-        await prisma.employees.create({
+        const employee = await prisma.employees.create({
           data: {
             name,
             cpf,
             email,
             passwordHash,
           },
+          select: { id: true },
         })
 
         const { error } = await resend.emails.send({
@@ -86,6 +93,7 @@ export async function createAccount(app: FastifyInstance) {
 
         return reply.status(201).send({
           message: 'Funcionário criado com sucesso!',
+          employeeId: employee.id,
         })
       }
     )

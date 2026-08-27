@@ -42,7 +42,7 @@
 ## 1. Funcionários (Employees)
 
 ### Casos de uso (RF)
-- [x] Criar funcionário (`create-account.ts`)
+- [x] Criar funcionário (`create-account.ts` — `POST /employees/create-account`; ADMIN-only, o `201` devolve `employeeId` além da mensagem, para encadear `link-with-rooms` logo após o cadastro)
 - [x] Autenticar (login) (`authenticate.ts`)
 - [x] Encerrar sessão (logout) (`logout.ts` — `POST /employees/session/logout`; apaga o cookie `httpOnly` repetindo os mesmos atributos da gravação, sem exigir autenticação para que a sessão expirada também consiga sair. O JWT segue válido até vencer — não há lista de revogação)
 - [x] Obter perfil do usuário logado (`get-profile.ts` — `GET /employees/profile`)

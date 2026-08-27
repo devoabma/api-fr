@@ -118,7 +118,7 @@ O sistema pode gerar relatórios:
 #### 👔 Funcionários (Employees)
 
 - [x] Criar seed do usuário administrador master (permissão para criar funcionários e salas).
-- [x] Cadastrar funcionários.
+- [x] Cadastrar funcionários (`POST /employees/create-account`; ADMIN-only, o `201` devolve `employeeId` para que o painel encadeie a vinculação com salas sem precisar varrer a listagem).
 - [x] Autenticar.
 - [x] Encerrar a sessão (logout).
 - [x] Obter o perfil de um usuário logado.
