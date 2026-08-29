@@ -235,6 +235,7 @@ Demais regras:
   | --- | --- | --- | --- |
   | Qualquer rota (teto global) | 300 | 1 min | IP |
   | Rota inexistente | 60 | 1 min | IP |
+  | `GET /ready` | 60 | 1 min | IP |
   | `POST /employees/session/auth` | 5 | 10 min | IP + CPF |
   | `POST /employees/password-recovery` | 5 | 15 min | IP |
   | `POST /employees/reset-password` | 10 | 10 min | IP |
@@ -242,9 +243,24 @@ Demais regras:
   | `POST /lawyers/close-computer/:sessionId` | 30 | 1 min | IP |
   | `POST /printers/send-to-print/:macCode` | 15 | 5 min | IP + macCode |
 
-  Ao estourar o teto, a API responde `429` com `{ message, retryAfterInSeconds }` e os headers `retry-after` / `x-ratelimit-*`. **O app desktop e o front devem tratar o `429` lendo `retryAfterInSeconds`** e aguardar esse tempo, em vez de retentar em laço. `/health` e `/docs` são isentos.
+  Ao estourar o teto, a API responde `429` com `{ message, retryAfterInSeconds }` e os headers `retry-after` / `x-ratelimit-*`. **O app desktop e o front devem tratar o `429` lendo `retryAfterInSeconds`** e aguardar esse tempo, em vez de retentar em laço. `/health` e `/docs` são isentos — `/ready` **não é**, porque encosta no banco (ver o RNF de sondas de saúde abaixo).
 
   > A contagem só funciona por cliente se `TRUST_PROXY` estiver correto em produção — ver [`docs/DEPLOY.md`](./DEPLOY.md).
+
+- A API expõe **duas sondas de saúde**, que respondem a perguntas diferentes e têm consumidores diferentes. Confundir as duas é o erro clássico aqui:
+
+  | Rota | Pergunta | Quem consome | Toca no banco |
+  | --- | --- | --- | --- |
+  | `GET /health` | **vivacidade** — o processo está atendendo? | `HEALTHCHECK` do container | não |
+  | `GET /ready` | **prontidão** — dá para atender de verdade? | selo do painel web | sim (`SELECT 1`) |
+
+  `/health` responde `200 {"status":"ok"}` e **de propósito não toca em nada**. `/ready` sonda o banco e responde `200 {"status":"ok","database":"up"}` ou `503 {"status":"error","database":"down"}` — este último também quando a sonda passa de 3s, teto menor de propósito que os 15s que o pool espera por conexão nova (calibrados para o cold start do Neon): numa sonda, a espera longa chegaria justamente quando o banco está mal, e quem perguntou desistiria antes por timeout, recebendo erro de rede genérico no lugar do `503` legível.
+
+  **O `HEALTHCHECK` do container não pode migrar para `/ready`.** Para o orquestrador, "não saudável" significa uma coisa só: reiniciar o container. Reiniciar a API não conserta banco fora do ar — só derruba o WebSocket dos Desktops de todas as salas e, se a queda durar, vira laço de reinício.
+
+  **O que o front web precisa fazer**: o selo do painel pergunta em `/ready`, nunca em `/health`, e precisa distinguir três estados, não dois — `200` (tudo no ar), `503` (**API no ar, banco fora**) e falha de rede (API fora). Mostrar a mesma mensagem para o `503` e para a falha de rede joga fora exatamente a informação que a rota existe para dar: no primeiro caso o problema é o banco e a API não deve ser reiniciada; no segundo, o problema é a API.
+
+  Ambas são públicas, sem auth, e nenhuma das duas aparece no `/docs` — o `@fastify/swagger` descobre rotas por hook, e só enxerga as que são registradas depois dele. Estão documentadas aqui e em [`docs/DEPLOY.md`](./DEPLOY.md), em prosa, de propósito.
 
 - A API aceita chamadas de navegador de **uma única origem**: a definida em `WEB_URL`. A resposta traz `Access-Control-Allow-Credentials: true`, porque a autenticação do painel é por **cookie `httpOnly`** e o navegador só grava e reenvia esse cookie entre origens diferentes quando a API nomeia a origem explicitamente — o coringa `*` é proibido pela especificação quando há credenciais.
 

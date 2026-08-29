@@ -303,8 +303,19 @@ contadores — o store é em memória).
 
 ### Health check
 
-A API expõe `GET /health` (sem auth, sem tocar no banco — só confirma que o
-processo Node/Fastify está respondendo). O Dockerfile já define um
+A API expõe **duas** rotas de saúde, que respondem a perguntas diferentes. Ler
+uma achando que é a outra é a fonte de confusão mais comum aqui:
+
+| Rota | Pergunta | Quem consome | Toca no banco |
+| --- | --- | --- | --- |
+| `GET /health` | **vivacidade** — o processo está atendendo? | `HEALTHCHECK` do container | não |
+| `GET /ready` | **prontidão** — dá para atender de verdade? | selo do painel web | sim (`SELECT 1`) |
+
+Ambas são públicas, sem auth.
+
+#### `/health` — vivacidade (é o que o container lê)
+
+Responde `200 {"status":"ok"}` sem tocar em nada. O Dockerfile define o
 `HEALTHCHECK` usando o `fetch` nativo do Node (sem precisar de `curl`/`wget`
 na imagem):
 
@@ -322,11 +333,61 @@ a reportar `Healthy`/`Unhealthy` de verdade — não precisa configurar nada a
 mais na aba **Healthcheck** do Coolify, ele lê o `HEALTHCHECK` da imagem
 automaticamente.
 
+> 🚫 **Não aponte o `HEALTHCHECK` para `/ready`.** Parece um upgrade e é uma
+> armadilha: para o orquestrador, "não saudável" significa uma coisa só —
+> **reiniciar o container**. Reiniciar a API não conserta banco fora do ar; só
+> derruba o WebSocket dos Desktops de **todas** as salas e, se a queda durar,
+> vira laço de reinício. Com o Neon em scale-to-zero, um cold start já bastaria
+> para disparar isso. `/health` responde ao container; `/ready` responde a
+> gente.
+
 > ⚠️ **`Healthy` não significa "acessível".** O comando roda de dentro do
 > container, contra `localhost`. Ele fica verde mesmo se o `Port Mappings`
 > estiver vazio, se o NPM estiver mal configurado ou se o DNS não resolver.
 > Para saber se a API está de fato no ar, teste pelo domínio público.
 
+#### `/ready` — prontidão (é o que o painel lê)
+
+Sonda o banco com `SELECT 1` e responde:
+
+| Situação | Resposta |
+| --- | --- |
+| banco respondeu | `200 {"status":"ok","database":"up"}` |
+| banco não respondeu, ou levou mais de 3s | `503 {"status":"error","database":"down"}` |
+
+O teto de **3s** é menor de propósito que o `connectionTimeoutMillis: 15_000`
+do pool (`src/lib/prisma.ts`, dimensionado para o cold start do Neon). Numa
+rota de dado, esperar 15s protege a leitura; numa sonda, atrapalha — a espera
+seria maior justamente quando o banco está mal, e quem perguntou desistiria
+antes por timeout do cliente, recebendo erro de rede genérico no lugar do
+`503` legível. Aqui, estourar o tempo **é** a resposta.
+
+Tem teto de **60 req/min por IP** — é rota pública que faz a API abrir conexão
+com o banco, então não entra na lista de isentas junto com `/health` e
+`/docs`. Para o painel é folga larga (2 perguntas por minuto por aba).
+
+Para diagnosticar em produção:
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{time_total}s\n' https://api-fr.oabma.org.br/health
+curl -s https://api-fr.oabma.org.br/ready
+```
+
+| O que você vê | O que significa | O que fazer |
+| --- | --- | --- |
+| `/health` 200 · `/ready` 200 | tudo no ar | nada |
+| `/health` 200 · `/ready` 503 | API no ar, **banco fora** | olhar o Neon (scale-to-zero acordando? credencial? `DATABASE_URL`?) — **não** reiniciar o container |
+| `/health` não responde | processo ou rota de rede fora | container, `Port Mappings`, NPM, DNS — nessa ordem |
+
+> ⚠️ Quem escreve o selo do painel precisa distinguir **`503`** ("API no ar,
+> banco fora") de **falha de rede** ("API fora"). São diagnósticos diferentes e
+> levam a ações diferentes; exibir a mesma mensagem para os dois joga fora
+> exatamente a informação que esta rota existe para dar.
+
+> ℹ️ Nenhuma das duas rotas aparece no `/docs`. O `@fastify/swagger` descobre
+> rotas por hook `onRoute`, que só enxerga o que é registrado depois dele — e
+> as duas são registradas antes. Estão documentadas aqui, em prosa, de
+> propósito.
 ---
 
 ## DNS e Nginx Proxy Manager
@@ -395,6 +456,10 @@ proxy_send_timeout 3600s;
       `200`. Prova que a porta está publicada.
 - [ ] Testar pelo domínio: `curl -s https://api-fr.oabma.org.br/health` →
       `{"status":"ok"}`. Prova que NPM, DNS e TLS estão de pé.
+- [ ] Testar a prontidão: `curl -s https://api-fr.oabma.org.br/ready` →
+      `{"status":"ok","database":"up"}`. Prova que o banco responde — é o
+      único dos testes acima que sai do processo e encosta no Neon. Um `503`
+      aqui com `/health` em `200` é banco fora, não API fora.
 - [ ] Abrir `https://api-fr.oabma.org.br/docs` (Scalar).
 
 ## Troubleshooting

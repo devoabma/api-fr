@@ -7,6 +7,7 @@ import { fastifySwagger } from '@fastify/swagger'
 import ScalarApiReference from '@scalar/fastify-api-reference'
 import { fastify } from 'fastify'
 import { jsonSchemaTransform, serializerCompiler, validatorCompiler, type ZodTypeProvider } from 'fastify-type-provider-zod'
+import { prisma } from '@/lib/prisma'
 import { errorHandler } from './_errors'
 import { BadRequestError } from './_errors/bad-request'
 import { env } from './env'
@@ -51,6 +52,33 @@ app.addContentTypeParser('application/json', { parseAs: 'string' }, (_request, b
   }
 })
 
+/** Teto da sondagem do banco em `/ready`. */
+const DATABASE_PROBE_TIMEOUT_IN_MS = 3_000
+
+/**
+ * O banco responde?
+ *
+ * O adapter espera até 15s por uma conexão nova (`connectionTimeoutMillis`, dimensionado para o cold
+ * start do Neon). Numa rota de dado isso protege a leitura; aqui atrapalha: a sondagem ficaria
+ * pendurada justamente quando o banco está mal, e quem perguntou desiste antes por timeout do
+ * cliente — recebendo um erro de rede genérico no lugar de um 503 legível. Estourar o tempo aqui já
+ * é a resposta.
+ */
+async function isDatabaseReachable() {
+  // As duas pontas *resolvem*, nenhuma rejeita: assim o perdedor da corrida não vira unhandled rejection.
+  const probe = prisma.$queryRaw`SELECT 1`.then(
+    () => true,
+    () => false
+  )
+
+  const timeout = new Promise<boolean>(resolve => {
+    // `unref` para um timer ainda pendente não segurar o processo no encerramento.
+    setTimeout(() => resolve(false), DATABASE_PROBE_TIMEOUT_IN_MS).unref()
+  })
+
+  return Promise.race([probe, timeout])
+}
+
 // Registrado antes das rotas: o plugin instala um hook em cada rota declarada depois dele.
 app.register(fastifyRateLimit, globalRateLimit).after(() => {
   app.setNotFoundHandler({ preHandler: app.rateLimit({ max: 60, timeWindow: '1 minute' }) }, (request, reply) => {
@@ -59,8 +87,43 @@ app.register(fastifyRateLimit, globalRateLimit).after(() => {
       route: request.url,
     })
   })
+
+  /**
+   * **Prontidão**: o processo está de pé **e** o banco responde. É o que o selo do painel lê.
+   *
+   * Mora aqui dentro, e não em linha como o `/health`, por um motivo medido: rota de raiz declarada
+   * antes de o plugin de rate limit terminar de carregar não recebe o hook e responde sem os
+   * `x-ratelimit-*` — fica sem teto sem avisar. No `/health` isso é indiferente (ele já é isento por
+   * `UNLIMITED_ROUTES` e não toca em nada); aqui não: é rota pública que encosta no banco, e sem
+   * limite vira um jeito barato de um estranho mandar a API abrir conexão.
+   *
+   * O teto próprio vai em `config.rateLimit`, e não num `preHandler` como o do `setNotFoundHandler`
+   * logo acima: ali funciona porque o 404 não é rota registrada e escapa do hook global, mas em rota
+   * de verdade o hook global chega primeiro e o `preHandler` não muda nada — medido, 65 chamadas sem
+   * um único 429. 60/min por IP é folga larga: o painel pergunta 2 vezes por minuto em cada aba
+   * aberta.
+   */
+  app.get('/ready', { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (_request, reply) => {
+    const isDatabaseUp = await isDatabaseReachable()
+
+    if (!isDatabaseUp) {
+      return reply.status(503).send({ status: 'error', database: 'down' })
+    }
+
+    return reply.status(200).send({ status: 'ok', database: 'up' })
+  })
 })
 
+/**
+ * **Vivacidade**: o processo está de pé e atendendo. De propósito não toca no banco.
+ *
+ * Quem consome isto é o `HEALTHCHECK` do Dockerfile, e para o orquestrador "não saudável" significa
+ * uma coisa só: reinicie o contêiner. Reiniciar a API não conserta banco fora do ar — só derruba os
+ * WebSockets dos Desktops das salas e, se a queda durar, vira laço de reinício. Com o Neon em
+ * scale-to-zero, um cold start já bastaria para disparar isso.
+ *
+ * Quem quer saber se dá para *atender de verdade* pergunta em `/ready`.
+ */
 app.get('/health', async (_request, reply) => {
   return reply.status(200).send({ status: 'ok' })
 })
