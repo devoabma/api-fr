@@ -63,6 +63,8 @@ Cada **computador** (`computers`) possui:
 
 > 🗑️ As impressões são apagadas do servidor **toda sexta-feira às 23:59:59** (fuso de `TIMEZONE`), por job agendado: o arquivo sai do bucket `prints` e o registro sai da tabela `printers`.
 
+> 📧 Cada execução envia um relatório por e-mail ao administrador (`EMAIL_ADMIN`), inclusive quando não havia nada a limpar — assim a **ausência** do e-mail na sexta já é sinal de problema. Se a API estiver fora do ar no horário agendado, o `node-cron` não recupera o disparo: o alerta sai no boot seguinte, quando a API encontra impressões anteriores à última sexta 23:59:59 ainda na fila.
+
 ### Administração e Relatórios
 
 Funcionários com papel **`ADMIN`** podem:
@@ -173,6 +175,8 @@ O sistema pode gerar relatórios:
 - [x] Enviar um arquivo para impressão pelo advogado com sessão ativa (`POST /printers/send-to-print/:macCode`; sem JWT, identifica a sessão pelo `macCode` do computador).
 - [~] Listar as impressões enviadas (`GET /printers/get-all/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação e filtro por status pendentes).
 - [x] Criar cron job que apaga as impressões do servidor toda sexta-feira às 23:59:59 (job in-process via `node-cron`, no fuso de `TIMEZONE`; remove o arquivo do bucket `prints` antes de apagar o registro).
+- [x] Enviar relatório da limpeza semanal por e-mail ao administrador (concluída, parcial ou falha), com envio não-fatal — falha de e-mail não interrompe o job.
+- [x] Alertar no boot quando a janela agendada passou sem limpeza, usando a própria fila como evidência (sem tabela de controle).
 
 ### 📐 RNs — Regras de Negócio
 

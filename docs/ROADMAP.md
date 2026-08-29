@@ -137,6 +137,8 @@
 - [ ] (Opcional) Atualizar status `downloaded_at` / `printed_at`
 - [x] Cron job: apagar impressões do servidor toda sexta-feira às 23:59:59 (`src/http/jobs/delete-weekly-prints.cron.ts`; `node-cron` no fuso de `TIMEZONE`, remove do bucket `prints` antes de apagar o registro)
   - Regra revisada: era "1 dia após o envio"; passou a ser expurgo semanal, para não apagar arquivo enviado na sexta antes de ser impresso na segunda
+- [x] Relatório por e-mail de cada limpeza semanal para `EMAIL_ADMIN` (concluída, parcial ou falha; sai também quando não havia nada a limpar, para que a ausência do e-mail seja sinal)
+- [x] Alerta no boot quando a janela agendada passou sem limpeza (API fora do ar na sexta): a fila com impressões anteriores à última sexta 23:59:59 é a evidência
 
 ---
 
