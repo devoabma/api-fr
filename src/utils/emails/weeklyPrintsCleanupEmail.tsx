@@ -64,8 +64,7 @@ const STATUS_CONFIG: Record<
     label: '❌ Falhou',
     heading: 'Falha na limpeza semanal',
     preview: 'A limpeza semanal das impressões falhou e precisa de verificação.',
-    summary:
-      'A execução foi interrompida por um erro. A fila pode ter ficado incompleta e precisa ser verificada manualmente.',
+    summary: 'A execução foi interrompida por um erro. A fila pode ter ficado incompleta e precisa ser verificada manualmente.',
   },
   pending: {
     accent: '#DC2626',
