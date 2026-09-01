@@ -145,11 +145,13 @@
 ## 6. Relatórios (Reports)
 
 ### Casos de uso (RF)
-- [ ] Uso de cada sala e computador
+- [~] Uso de cada sala e computador — `GET /lawyers/releases-metrics/:roomId?` agrega por sala; por computador ainda não
 - [ ] Quantidade de impressões por advogado e sala
-- [ ] Tempo médio de uso por sessão
+- [x] Tempo médio de uso por sessão — em `releases-metrics`, apenas sobre sessões encerradas
+- [x] Liberações por ano, por mês e por advogado — `releases-metrics`
 
 ### Regras de negócio (RN)
 - [ ] Somente ADMIN emite relatórios
-</content>
-</invoke>
+  - Obs.: `releases-metrics` **não** é restrita a ADMIN — ela alimenta a tela de Métricas, que fica em
+    "Operação" e recorta por sala vinculada, como `get-all-releases`. A regra acima vale para a tela de
+    Relatórios da Administração, ainda por fazer.

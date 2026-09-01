@@ -75,9 +75,11 @@ Funcionários com papel **`ADMIN`** podem:
 
 O sistema pode gerar relatórios:
 
-- Uso de cada sala e computador.
+- Uso de cada sala e computador — por sala já sai em `GET /lawyers/releases-metrics`; por computador ainda não.
 - Quantidade de impressões por advogado e sala.
-- Tempo médio de uso por sessão.
+- Tempo médio de uso por sessão — em `releases-metrics`, apenas sobre sessões encerradas.
+
+> ⚠️ A tela de **Métricas** (`releases-metrics`) fica em "Operação" e é aberta a MEMBER, recortada pelas salas dele. A restrição a ADMIN acima vale para a tela de **Relatórios** da Administração, ainda por fazer.
 
 ---
 
@@ -168,7 +170,12 @@ O sistema pode gerar relatórios:
 - [x] Criar cron job que verifica sessões expiradas dos advogados e libera o computador (`node-cron` in-process, verifica a cada 1min sem sobreposição).
 - [x] Cancelar a própria sessão (`POST /lawyers/close-computer/:sessionId`).
 - [x] Continuar a sessão de onde parou (no mesmo dia somente).
-- [~] Buscar todas as sessões (`GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; paginação pendente).
+- [~] Buscar todas as sessões (`GET /lawyers/get-all-releases/:roomId?`; ADMIN vê todas, MEMBER só das salas vinculadas; cada item traz `lawyer.oab`, porque homônimos são comuns e o nome sozinho não identifica quem usou a máquina; paginação pendente).
+- [x] Agregar as liberações para a tela de métricas (`GET /lawyers/releases-metrics/:roomId?year=`; devolve `kpis`, `byYear`, `byMonth`, `byRoom` e `byLawyer` **já somados no Postgres**, para o painel não baixar o histórico bruto só para desenhar um gráfico).
+  - Mesmo recorte por papel de `get-all-releases`, e **não** restrita a ADMIN: a tela fica em "Operação". MEMBER que pedir uma sala à qual não pertence recebe `200` zerado, não erro.
+  - `byRoom` **ignora** o `roomId` de propósito — é um ranking *entre* salas, e comparar uma sala com ela mesma não informa nada. Salas sem movimento entram com `total: 0`.
+  - Ano e mês são agrupados no fuso de `TIMEZONE`, não em UTC: senão a liberação das 23h de 31/12 cairia em janeiro do ano seguinte.
+  - O tempo médio só conta sessões encerradas e despreza durações acima de 24h — resto de sessão fechada tarde pelo cron após uma queda do serviço.
 
 #### 🖨️ Impressões (Printers)
 

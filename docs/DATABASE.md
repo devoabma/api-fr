@@ -206,7 +206,14 @@ Registra cada **sessão de uso** de um computador por um advogado.
 - `computer` → `Computers` (N:1). Sem `onDelete` explícito → `Restrict`.
 - `lawyer` → `Lawyers` (N:1). Sem `onDelete` explícito → `Restrict`.
 
+**Índices** (migração `20260901120000_indices_para_metricas`)
+- `@@index([startedAt])` — recorte por período das métricas.
+- `@@index([computerId])` — agregação por sala, que chega aqui via `Computers`.
+- `@@index([lawyerId])` — ranking por advogado.
+
 > 💡 Sessão "aberta" = `endedAt == null`. A duração é `endedAt - startedAt`.
+
+> ⚠️ Esta é a única tabela que **cresce sem teto** — uma linha por liberação, para sempre. Ela nasceu só com a PK; sem os índices acima cada agregação da tela de métricas varre a tabela inteira.
 
 ---
 

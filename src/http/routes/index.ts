@@ -23,6 +23,7 @@ import { updateEmployee } from '../core/employees/update'
 import { updateEmployeeImage } from '../core/employees/update-image'
 import { closeSession } from '../core/lawyers/close-session'
 import { getAllReleases } from '../core/lawyers/get-all-releases'
+import { getReleasesMetrics } from '../core/lawyers/get-releases-metrics'
 import { releaseComputer } from '../core/lawyers/release-computer'
 import { getAllPrinters } from '../core/printers/get-all'
 import { sendToPrint } from '../core/printers/send-to-print'
@@ -71,6 +72,7 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(releaseComputer, { prefix: '/lawyers' })
   app.register(closeSession, { prefix: '/lawyers' })
   app.register(getAllReleases, { prefix: '/lawyers' })
+  app.register(getReleasesMetrics, { prefix: '/lawyers' })
 
   /* Printers (Impressões) */
   app.register(sendToPrint, { prefix: '/printers' })

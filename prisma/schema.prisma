@@ -143,6 +143,12 @@ model ComputerSessions {
   lawyer   Lawyers @relation(fields: [lawyerId], references: [id])
   lawyerId String  @map("lawyer_id")
 
+  // A tabela nasceu apenas com a chave primária. A tela de métricas recorta por período,
+  // por sala (via `computer`) e por advogado — sem estes índices cada agregação varre a
+  // tabela inteira, e ela só cresce.
+  @@index([startedAt])
+  @@index([computerId])
+  @@index([lawyerId])
   @@map("computer_sessions")
 }
 

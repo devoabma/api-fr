@@ -29,6 +29,8 @@ const getAllReleasesSchema = {
           lawyer: z.object({
             id: z.cuid2(),
             name: z.string(),
+            /** Inscrição na OAB. Homônimos são comuns; o nome sozinho não identifica quem usou a máquina. */
+            oab: z.string(),
           }),
           room: z.object({
             id: z.cuid2(),
@@ -103,6 +105,7 @@ export async function getAllReleases(app: FastifyInstance) {
               select: {
                 id: true,
                 name: true,
+                oab: true,
               },
             },
             computer: {
