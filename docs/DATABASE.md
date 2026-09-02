@@ -46,6 +46,15 @@ Employee (ADMIN) ──cadastra──▶ Rooms ──contém──▶ Computers
 |--------------------|------------------------------------------|
 | `PASSWORD_RECOVER` | Token de recuperação de senha.           |
 
+### `AppVersionOrigins` — por onde a versão publicada chegou
+| Valor       | Significado                                                                       |
+|-------------|-----------------------------------------------------------------------------------|
+| `PUBLISHER` | Chegou pelo `POST /app/version`, no instante da publicação. É a fonte.             |
+| `MIRROR`    | Chegou pelo job que espelha o arquivo público. É a rede de segurança.              |
+
+> Campo de **diagnóstico**: responde "por onde esta versão chegou por último" quando alguém pergunta
+> por que o painel demorou a mostrar o número novo. Não participa de nenhuma regra de negócio.
+
 ---
 
 ## 🗂️ Modelos (Tabelas)
@@ -231,6 +240,32 @@ Arquivos enviados para impressão, associados a um computador e a um advogado.
 **Relações**
 - `computer` → `Computers` (N:1). **`onDelete: Cascade`**.
 - `lawyer` → `Lawyers` (N:1). **`onDelete: Cascade`**.
+
+---
+
+### 9. `AppVersions` → tabela `app_versions`
+Versões publicadas do Desktop. É a metade que faltava para responder **"quais máquinas estão atrasadas"** — a outra metade é `computers.app_version`, que cada estação anuncia no `register` do canal.
+
+Tabela **sem relação com nenhuma outra**: ela descreve o parque como um todo, não uma máquina.
+
+| Campo         | Tipo              | Coluna (DB)     | Regras / Observações                                                                 |
+|---------------|-------------------|-----------------|--------------------------------------------------------------------------------------|
+| `id`          | String            | `id`            | PK, CUID.                                                                             |
+| `version`     | String            | `version`       | **Único**, `VarChar(40)`. Texto, nunca numérico.                                       |
+| `envelope`    | String            | `envelope`      | O manifesto assinado **como chegou**, sem reserializar.                                |
+| `generatedAt` | DateTime?         | `generated_at`  | `geradoEm` de dentro do manifesto: quando a versão foi publicada, não quando a API soube. |
+| `notes`       | String?           | `notes`         | `notas` do manifesto, em português, para o funcionário ler antes de mandar atualizar.  |
+| `rollout`     | Json?             | `rollout`       | `implantacao` (`{ percentual, macs }`), guardada como veio, sem interpretar.            |
+| `origin`      | AppVersionOrigins | `origin`        | Por qual das duas fontes esta linha chegou por último.                                  |
+| `etag`        | String?           | `etag`          | `ETag` da última leitura pública — é o que faz o job perguntar com `If-None-Match`.     |
+| `createdAt`   | DateTime          | `created_at`    | `@default(now())`. Indexado **desc**.                                                   |
+| `updatedAt`   | DateTime          | `updated_at`    | `@updatedAt`.                                                                           |
+
+**Três decisões que o modelo esconde**
+
+1. **É histórico, e não uma linha só sobrescrita.** Uma linha por versão responde de graça "quando a 1.0.8 saiu, com que notas" — hoje isso só existe no terminal de quem publicou. A **vigente** é a de `created_at` mais recente, e isso só é verdade porque a gravação recusa o que é mais velho do que o já guardado.
+2. **`version` é texto, e a ordenação por versão não é do banco.** `ORDER BY version` mentiria: `'1.0.10' < '1.0.7'` em comparação alfabética. A conta mora em `src/utils/app-version.ts`, por partes numéricas.
+3. **`envelope` é texto cru, e não `Json`.** A fase 2 (`GET /app/version`) devolve este campo byte a byte às estações, e a estação recusa em silêncio o envelope cuja assinatura não confere. Guardar objeto e remontar na saída reordena chaves e reindenta o JSON — ou seja, quebraria a assinatura sem alterar um único dado.
 
 ---
 

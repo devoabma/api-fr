@@ -154,7 +154,17 @@ O sistema pode gerar relatórios:
 - [x] Cadastrar um computador.
 - [x] Editar um computador (`PATCH /computers/update/:id`; ADMIN-only, atualização parcial).
 - [x] Excluir um computador (`DELETE /computers/delete/:id`; ADMIN-only, recusa se em uso, remove sessões e impressões em cascata).
-- [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; cada máquina traz `createdAt` e a lista vem ordenada por data de cadastro, mais recente primeiro; paginação pendente).
+- [~] Listar computadores (`GET /computers/get-all`; filtros por sala e por descrição; ordenada por data de cadastro, mais recente primeiro; paginação pendente). Cada máquina traz `createdAt`, `appVersion`/`appVersionReportedAt`, `isOnline` e `updateStatus`; a resposta traz `latestVersion` no topo.
+  - `isOnline` sai do mapa em memória do canal, com **uma** leitura servindo a lista inteira — a mesma fonte de `GET /computers/online/:roomId?`, e com as mesmas ressalvas (o atraso do heartbeat faz uma máquina desligada na tomada aparecer conectada por até ~60s).
+  - `updateStatus` tem **três** valores: `outdated`, `up-to-date` e `unknown`. A conta é do servidor de propósito — comparar versão por texto é um erro que só aparece na décima publicação (`'1.0.10' < '1.0.9'` em ordem alfabética) e não pode ser reescrito em cada tela.
+  - `unknown` cobre três situações — nunca informou a versão, informou algo ilegível (`"1.0.8-beta"`), ou a API ainda não conhece a publicada. Ele **nunca** vira `up-to-date`: confundir "não sei" com "está certo" é exatamente como uma máquina desatualizada some do radar.
+  - `latestVersion` traz `version`, `notes` e `generatedAt` da publicada vigente, ou `null` enquanto nenhuma chegou. As `notes` vêm do próprio manifesto, escritas em português para o funcionário ler antes de mandar atualizar.
+- [x] Mandar uma estação atualizar agora (`POST /computers/update-app/:id`; ADMIN-only, uma máquina por chamada).
+  - O caminho é `/update-app/:id` e **não** `/update/:id` — este último é o `PATCH` que edita o cadastro. Duas operações sem nada em comum na mesma URL, separadas só pelo verbo, fariam um `POST` distraído mandar uma estação baixar ~60 MB.
+  - Recusa com `400` a máquina **em uso** (nenhuma versão interrompe advogado(a) em atendimento) e a que já está na versão publicada. **Manutenção não bloqueia**: é o melhor momento possível para trocar o executável.
+  - Responde `409` para estação fora do canal, **sem enfileirar** — a máquina desligada pega a versão sozinha na próxima partida.
+  - O `200` confirma **o envio do recado, jamais a atualização**. O resultado real chega no `register` seguinte, com a versão nova.
+  - Teto de 10 em 5 minutos contado **por máquina**, não por funcionário: o que satura o link da unidade é a mesma sala baixando junto, não o mesmo crachá clicando.
 - [x] Colocar/retirar um computador de manutenção (`PATCH /computers/maintenance/:id` e `.../remove`; ADMIN em qualquer máquina, funcionário comum nas de suas salas).
 - [x] Liberar um computador manualmente pelo painel (mesma rota `POST /lawyers/release-computer`: o funcionário informa os dados do advogado(a) e o `macCode` da máquina, e a API destrava a estação pelo evento `session_started` do WebSocket).
 - [x] Saber quais estações estão conectadas (`GET /computers/online/:roomId?`; ADMIN vê todas, MEMBER só as salas vinculadas; a resposta traz **apenas** os computadores no canal `/ws/computers`, com `id`, `macCode`, `roomId` e `connectedAt` — quem não está na lista está desligado, sem rede ou com o Desktop fechado).
@@ -184,6 +194,27 @@ O sistema pode gerar relatórios:
 - [x] Criar cron job que apaga as impressões do servidor toda sexta-feira às 23:59:59 (job in-process via `node-cron`, no fuso de `TIMEZONE`; remove o arquivo do bucket `prints` antes de apagar o registro).
 - [x] Enviar relatório da limpeza semanal por e-mail ao administrador (concluída, parcial ou falha), com envio não-fatal — falha de e-mail não interrompe o job.
 - [x] Alertar no boot quando a janela agendada passou sem limpeza, usando a própria fila como evidência (sem tabela de controle).
+
+#### 📦 Versão do Desktop (App)
+
+A API não distribui o executável e **não assina nada**. Ela guarda qual versão foi publicada, para conseguir dizer quais máquinas estão atrasadas — e para o painel poder pedir que uma delas atualize.
+
+- [x] Guardar o histórico das versões publicadas (tabela `app_versions`; uma linha por versão, a vigente é a última criada).
+- [x] Receber o aviso da publicação (`POST /app/version`).
+  - **Não é login de funcionário.** Autentica por `Authorization: Bearer <APP_VERSION_PUBLISH_TOKEN>`, comparado em tempo constante. Quem chama é o `publicar.ps1`, uma vez por versão.
+  - Sem o token configurado na API, responde `503` e não aceita nada — o contrário seria comparar segredo vazio com segredo vazio e aceitar qualquer manifesto que batesse à porta.
+  - `201` gravou; `409` chegou depois de algo mais novo (com mensagens distintas para "versão mais nova já publicada" e "publicação mais recente desta mesma versão"); `400` envelope ou assinatura inválidos; `401` token errado.
+  - O corpo é o envelope assinado (`conteudo`, `algoritmo`, `chave`, `assinatura`) e vai ao banco **como texto, byte a byte**. Reserializar reordenaria chaves e reindentaria o JSON — o que quebra a assinatura sem alterar um único dado.
+- [x] Espelhar o manifesto público a cada 5 minutos (`APP_MANIFEST_URL`), com `If-None-Match`.
+  - É a **rede de segurança**, não a fonte: existe para o dia em que o aviso acima não chegar (script que falhou, API reiniciando, rede ruim na hora exata).
+  - Uma consulta **por processo**, jamais por usuário do painel — o painel lê da tabela.
+  - Falha de leitura (timeout, `5xx`, DNS oscilando) **mantém** a versão conhecida. Apagá-la faria o painel anunciar o parque inteiro em dia, e ninguém atualizaria nada naquele dia.
+- [x] Conferir a assinatura do manifesto na entrada, quando `APP_MANIFEST_PUBLIC_KEY` estiver configurada.
+  - **É rede, não muralha.** Quem protege o parque é cada estação, que valida o mesmo envelope com a chave embutida no próprio executável antes de instalar. A conferência aqui cobre dois casos que a estação cobriria tarde demais: alguém de posse do token empurrando lixo pela rota, e arquivo corrompido em trânsito virando "versão publicada" no painel.
+  - A chave é **pública** e não é segredo: ela já viaja dentro de todo executável instalado no parque. A privada nunca chega perto da API.
+- [ ] `GET /app/version` — servir o envelope às estações direto da API (fase 2). O banco já guarda o manifesto preparado para isso.
+
+**A guarda que parece paranoia e não é.** O arquivo público tem `Cache-Control: max-age=300`. Publica-se a 1.0.9, o `POST` avisa e a API já sabe; minutos depois o espelho pergunta à CDN, que **ainda entrega a 1.0.8 do cache**. Sem guarda, o espelho rebaixaria a versão publicada: o painel voltaria a dizer que o parque está em dia, o botão de atualizar sumiria de todas as máquinas, e cinco minutos depois tudo se consertaria sozinho — um bug que aparece e some sozinho é um bug que ninguém consegue reproduzir para reportar. Por isso a ordem **nunca** é por quem escreveu por último: é por número de versão e, no empate, pelo `geradoEm` de dentro do conteúdo assinado (a onda sobe republicando o **mesmo** número, e conter uma versão ruim é republicar com percentual **menor** — comparar percentual quebraria justamente esse freio de mão).
 
 ### 📐 RNs — Regras de Negócio
 
@@ -411,7 +442,28 @@ Demais regras:
      - **Toda a saída tem de ser idempotente.** O eco acima e a resposta HTTP vão executá-la duas vezes. Fechar uma janela já fechada não pode lançar.
      - **Entrega não é garantida.** Estação offline não recebe nada, e o `register` ainda não devolve o estado atual. A rede de segurança é o próprio relógio do Desktop: quando ele zera, o `close-computer` responde `400` dizendo que a sessão já foi encerrada — trate esse `400` como sucesso e volte para a tela de identificação.
 
-  7. Reconectar conforme o **close code**, e não sempre da mesma forma:
+  7. Tratar o evento **`update_now`** — o servidor está pedindo que a estação consulte o manifesto **agora**, em vez de esperar o intervalo dela:
+
+     ```json
+     {
+       "type": "update_now",
+       "macCode": "AA-BB-CC-DD-EE-01",
+       "version": "1.0.9"
+     }
+     ```
+
+     | Campo | Para que serve |
+     | --- | --- |
+     | `macCode` | destinatário pretendido, normalizado. **Obrigatório**, e a estação descarta o que não for dela — mesma disciplina do `session_closed`. Pedido sem `macCode` não significa "para todas": significa descartado |
+     | `version` | versão que o servidor esperava encontrar. **Informativa**: a estação não instala nada por causa dela, só anota no diário. Ausente quando a API ainda não sabe qual é a publicada, e o pedido continua válido |
+
+     **O que esta mensagem deliberadamente não tem: URL, hash e tamanho de arquivo.** Ela não é capaz de apontar um executável para a máquina baixar. O que a estação instala vem exclusivamente do manifesto assinado que ela mesma vai buscar e conferir com a chave embutida no próprio executável — é isso que garante que uma invasão do servidor **não** vire um programa arbitrário instalado em todas as salas.
+
+     "Atualizar agora" quer dizer **antecipar**, nunca atropelar: numa máquina ocupada, o pacote fica pronto e espera o advogado(a) sair. A API já recusa o pedido com `400` quando a máquina está em uso, mas a última palavra é da estação. Nenhuma versão interrompe sessão aberta, nem quando a atualização é obrigatória.
+
+     **Não existe confirmação de volta.** Quem aplica a atualização reinicia, então a prova de que deu certo é o `register` seguinte chegando com a versão nova — e ela pode demorar minutos.
+
+  8. Reconectar conforme o **close code**, e não sempre da mesma forma:
 
      | Código | Significado | O que o Desktop faz |
      | --- | --- | --- |

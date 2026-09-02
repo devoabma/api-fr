@@ -104,4 +104,35 @@ export const rateLimits = {
       return macCodeKey(request, macCode ?? null)
     },
   },
+
+  /**
+   * Disparo de atualização do Desktop, contado **por máquina**.
+   *
+   * Por máquina, e não por funcionário, porque cada disparo aceito manda uma estação baixar ~60 MB:
+   * o que satura o link da unidade é a mesma sala baixando junto, não o mesmo crachá clicando. Um
+   * teto por usuário travaria quem acabou de atualizar a Sala 1 na hora de atualizar a Sala 2.
+   *
+   * Dez em cinco minutos é folgado de propósito — o suporte precisa poder insistir quando a estação
+   * não responde. É a segunda linha de defesa, não a primeira: o próprio cliente tem trava de "uma
+   * de cada vez" e responde o estado atual ao segundo pedido, em vez de abrir outro download.
+   */
+  updateComputerApp: {
+    max: 10,
+    timeWindow: '5 minutes',
+    keyGenerator: request => {
+      const { id } = request.params as { id?: string }
+
+      return `${ipKey(request)}:computer:${id ?? 'sem-id'}`
+    },
+  },
+
+  /**
+   * Aviso da publicação. Quem chama é o `publicar.ps1`, uma vez por versão — o teto existe só para
+   * um segredo vazado não virar um jeito barato de encher a tabela de manifestos.
+   */
+  publishAppVersion: {
+    max: 10,
+    timeWindow: '1 minute',
+    keyGenerator: ipKey,
+  },
 } satisfies Record<string, RateLimitOptions>

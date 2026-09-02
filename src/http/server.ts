@@ -2,6 +2,7 @@ import { app } from './app'
 import { env } from './env'
 import { startAutoCloseSessionsJob } from './jobs/auto-close-sessions.cron'
 import { startDeleteWeeklyPrintsJob } from './jobs/delete-weekly-prints.cron'
+import { startMirrorAppVersionJob } from './jobs/mirror-app-version.cron'
 import { WEBSOCKET_COMPUTERS_PATH } from './websocket'
 
 app
@@ -16,6 +17,7 @@ app
     🔌 \x1b[33m> WebSocket dos Desktops ouvindo em ws://<host>:${env.API_PORT}${WEBSOCKET_COMPUTERS_PATH}.
     🕒 \x1b[33m> Monitorando sessões para encerramento automático...
     🗑️  \x1b[33m> Limpeza de impressões agendada para toda sexta-feira às 23:59:59...
+    📦 \x1b[33m> Espelhando o manifesto do Desktop de 5 em 5 minutos...
        \x1b[33m
     `)
 
@@ -28,6 +30,7 @@ app
 
     startAutoCloseSessionsJob()
     startDeleteWeeklyPrintsJob()
+    startMirrorAppVersionJob()
   })
   .catch(err => {
     console.error(err)

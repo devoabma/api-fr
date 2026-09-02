@@ -127,6 +127,8 @@ Variáveis necessárias (mesmas do `.env.example`, com valores de produção):
 `NODE_ENV`, `API_PORT`, `TIMEZONE`, `TRUST_PROXY`, `WEB_URL`, `DOMAIN_URL`,
 `TOKEN_COOKIE_NAME`, `CPF_ADMIN`, `PASSWORD_ADMIN`, `EMAIL_ADMIN`,
 `ALLOW_DEFAULTING_LAWYERS` (opcional — ver seção abaixo),
+`APP_MANIFEST_URL`, `APP_VERSION_PUBLISH_TOKEN` e `APP_MANIFEST_PUBLIC_KEY`
+(opcionais — ver seção abaixo),
 `DATABASE_URL`, `RESEND_API_KEY`, `JWT_SECRET`, `PUBLIC_SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `API_PROTHEUS_DATA_URL`.
 
@@ -234,6 +236,44 @@ Enquanto estiver ligada, todo boot imprime um aviso vermelho nos logs do
 container. É o único ponto do sistema que anuncia a exceção: vale marcar no
 calendário a data em que a determinação vence, porque a variável não expira
 sozinha.
+
+### `APP_MANIFEST_URL`, `APP_VERSION_PUBLISH_TOKEN` e `APP_MANIFEST_PUBLIC_KEY` — versão publicada do Desktop
+
+As três são **opcionais**, e a API sobe normalmente sem nenhuma delas. Cada uma
+liga uma parte diferente, e vale saber o que fica desligado:
+
+| Variável | Ausente / vazia | Configurada |
+| --- | --- | --- |
+| `APP_MANIFEST_URL` | cai no default `https://salalivre.app/versao.json` | o job de espelho lê deste endereço |
+| `APP_VERSION_PUBLISH_TOKEN` | `POST /app/version` responde **`503`** e não aceita nada | o `publicar.ps1` consegue avisar a API no instante da publicação |
+| `APP_MANIFEST_PUBLIC_KEY` | conferência de assinatura **desligada** | manifesto com assinatura inválida é recusado na entrada |
+
+**Sem o token, o recurso continua funcionando.** O job de espelho sozinho
+descobre a versão publicada em até 5 minutos — o token só antecipa isso para o
+instante da publicação. O `503` é padrão seguro deliberado: o contrário seria
+comparar segredo vazio com segredo vazio e aceitar qualquer manifesto que
+batesse à porta.
+
+O token precisa de **no mínimo 32 caracteres** e é gerado com
+`openssl rand -hex 32`. Vazio ou só com espaços vale como "não configurado", e
+não como erro de boot — o `.env.example` copiado não pode derrubar a API. Já um
+valor **curto** reprova na validação e a API não sobe: segredo pela metade é
+pior do que segredo nenhum, porque parece configurado.
+
+Trocar o token exige mexer no `.env` da API **e** no cofre de quem publica,
+nessa ordem, com uma janela em que a publicação falha com `401`. Não há
+rotação automática.
+
+`APP_MANIFEST_PUBLIC_KEY` é a chave **pública** do publicador, em DER/SPKI
+base64. **Não é segredo** — ela já viaja dentro de todo executável instalado no
+parque, e publicá-la não abre nada. A privada, que assina, nunca chega perto da
+API: a API não assina manifesto em hipótese alguma.
+
+E a conferência aqui **não é o que protege o parque**. Quem protege é cada
+estação, que valida o mesmo envelope com a chave embutida no próprio executável
+antes de instalar qualquer coisa. Esta é uma rede a mais, contra token vazado
+empurrando lixo e contra arquivo corrompido virando "versão publicada" no
+painel.
 
 ### `TRUST_PROXY` — o valor muda entre dev e produção
 
@@ -482,3 +522,8 @@ proxy_send_timeout 3600s;
 | Usuários tomando `429` sem motivo / login e recuperação de senha bloqueados pra todo mundo ao mesmo tempo | `TRUST_PROXY` em `false` (ou ausente) em produção: o rate limit está contando todos os clientes como um IP só. Ver seção acima. |
 | Determinação de liberação geral não pegou — inadimplente continua recebendo `400` | `ALLOW_DEFAULTING_LAWYERS` com valor diferente da string `true` (ex: `1`, `sim`), ou container não reiniciado depois de criar a variável. Confirmar o aviso vermelho nos logs do boot. |
 | Inadimplente liberando computador sem determinação vigente | `ALLOW_DEFAULTING_LAWYERS=true` esquecida de uma determinação anterior. Apagar a variável e reiniciar. |
+| API não sobe, log reclamando de `APP_VERSION_PUBLISH_TOKEN` | Token com menos de 32 caracteres. Vazio ou ausente sobe normal (a rota de publicação é que responde `503`); **curto** reprova de propósito, porque segredo pela metade parece configurado. Gerar com `openssl rand -hex 32`. |
+| `publicar.ps1` recebendo `503` em `POST /app/version` | A API está sem `APP_VERSION_PUBLISH_TOKEN`. Criar a variável no Coolify e reiniciar o container. Enquanto isso, o job de espelho ainda descobre a versão em até 5 minutos. |
+| `publicar.ps1` recebendo `401` | Token do cofre de publicação diferente do que está na API — tipicamente uma troca feita de um lado só. |
+| Painel mostrando todas as estações como `unknown` | A API ainda não conhece nenhuma versão publicada. Conferir nos logs se o espelho está lendo (`[Espelho ...]`) e se `APP_MANIFEST_URL` aponta para o arquivo certo. |
+| Versão nova publicada e o painel não mostra, sem erro em lugar nenhum | `APP_MANIFEST_PUBLIC_KEY` preenchida com valor errado (ou só espaços): todo manifesto é recusado como `invalid_signature`. Procurar `[Versão ⚠️ ]` / `[Espelho ⚠️ ]` no log. Para descartar, esvaziar a variável — a conferência desliga e a API volta a só transportar o que já vem assinado. |

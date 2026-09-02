@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 
+import { publishAppVersion } from '../core/app-version/publish'
 import { createComputer } from '../core/computers/create'
 import { deleteComputer } from '../core/computers/delete'
 import { getAllComputers } from '../core/computers/get-all'
@@ -7,6 +8,7 @@ import { getOnlineComputers } from '../core/computers/get-online'
 import { putIntoMaintenanceComputer } from '../core/computers/put-into-maintenance'
 import { takeOutOfMaintenanceComputer } from '../core/computers/take-out-of-maintenance'
 import { updateComputer } from '../core/computers/update'
+import { updateComputerApp } from '../core/computers/update-app'
 import { activateEmployee } from '../core/employees/activate'
 import { authenticate } from '../core/employees/authenticate'
 import { changePassword } from '../core/employees/change-password'
@@ -67,6 +69,10 @@ export async function appRoutes(app: FastifyInstance) {
   app.register(putIntoMaintenanceComputer, { prefix: '/computers' })
   app.register(takeOutOfMaintenanceComputer, { prefix: '/computers' })
   app.register(deleteComputer, { prefix: '/computers' })
+  app.register(updateComputerApp, { prefix: '/computers' })
+
+  /* App (Versão do Desktop) */
+  app.register(publishAppVersion, { prefix: '/app' })
 
   /* Lawyers (Advogados) */
   app.register(releaseComputer, { prefix: '/lawyers' })

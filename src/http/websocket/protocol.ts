@@ -163,6 +163,36 @@ export type ServerMessage =
       remainingTime: number
     }
   | {
+      /**
+       * Pede à estação que consulte o manifesto **agora**, em vez de esperar o intervalo dela.
+       *
+       * É um toque no ombro, e nada além disso: não carrega URL, hash nem tamanho de arquivo, e não
+       * é capaz de apontar um executável para a máquina baixar. O que ela instala vem exclusivamente
+       * do manifesto assinado que ela mesma vai buscar e conferir com a chave embutida no
+       * executável — é isso que garante que uma invasão do servidor não vire um programa arbitrário
+       * instalado em todas as salas.
+       *
+       * "Forçar" aqui quer dizer **antecipar**, nunca atropelar: numa máquina ocupada o pacote fica
+       * pronto e espera o advogado(a) sair. Nenhuma versão interrompe sessão aberta, nem quando a
+       * atualização é obrigatória.
+       */
+      type: 'update_now'
+      /**
+       * Destinatário pretendido, no formato normalizado (`AA-BB-CC-DD-EE-FF`).
+       *
+       * **Obrigatório**, e a estação descarta o que não for dela — mesma disciplina do
+       * `session_closed`. Pedido sem `macCode` não significa "para todos": significa descartado.
+       */
+      macCode: string
+      /**
+       * Versão que o servidor esperava encontrar. Informativa: a estação **não** instala por causa
+       * dela, só a anota no diário para explicar depois qual versão o servidor tinha em mãos.
+       *
+       * Ausente quando a API ainda não sabe qual é a versão publicada — o pedido continua válido.
+       */
+      version?: string
+    }
+  | {
       type: 'session_closed'
       /**
        * Destinatário pretendido, no formato normalizado (`AA-BB-CC-DD-EE-FF`).

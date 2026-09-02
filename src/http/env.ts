@@ -64,8 +64,56 @@ const webUrlSchema = z
   .default('http://localhost:3000')
   .transform(value => value.replace(/\/+$/, ''))
 
+/**
+ * Teto do token que a publicação apresenta em `POST /app/version`.
+ *
+ * É **opcional** de propósito, e a rota recusa tudo enquanto ele não estiver definido: exigir aqui
+ * derrubaria o boot de qualquer ambiente que ainda não gerou o segredo — inclusive o de quem só
+ * quer subir a API para mexer em outra coisa. Ausente significa "ninguém publica por aqui", que é o
+ * padrão seguro; o que não pode existir é token vazio comparado com token vazio e dando certo.
+ *
+ * O mínimo de 32 caracteres é para o segredo não nascer adivinhável — não é a chave que assina o
+ * manifesto (essa nunca sai do cofre de quem publica), é só autorização de entrada.
+ */
+const appVersionPublishTokenSchema = z
+  .string()
+  .trim()
+  /**
+   * Vazio é **não configurado**, e não "token curto demais".
+   *
+   * O `.env.example` nasce com a chave presente e sem valor, que é como se declara "isto existe,
+   * preencha quando for usar". Sem esta linha, `APP_VERSION_PUBLISH_TOKEN=""` reprova no `min(32)` e
+   * derruba o boot de quem só copiou o arquivo — exatamente o ambiente que o `.optional()` acima
+   * existe para proteger. Só em branco também entra aqui: `" "` não é segredo, é descuido.
+   */
+  .transform(value => value || undefined)
+  .pipe(z.string().min(32, 'O token de publicação precisa de pelo menos 32 caracteres').optional())
+  .optional()
+
+/**
+ * Chave **pública** do publicador (DER/SPKI em base64), para conferir a assinatura do manifesto
+ * na entrada. Vazia = conferência desligada, que é o padrão enquanto a chave não for combinada.
+ *
+ * Não é segredo: ela já viaja dentro de todo executável instalado no parque. A privada, que
+ * assina, nunca chega perto da API.
+ *
+ * O `trim` para vazio é o que separa "desligado" de "ligado com chave ilegível": `" "` é truthy,
+ * passaria pelo desligamento e faria `createPublicKey` lançar em **todo** manifesto — e a captura de
+ * `isEnvelopeSignatureValid` transformaria isso em `invalid_signature` silencioso, com o painel
+ * parando de receber versão nova sem nenhum erro em lugar nenhum.
+ */
+const appManifestPublicKeySchema = z
+  .string()
+  .trim()
+  .transform(value => value || undefined)
+  .optional()
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['dev', 'production']).default('dev'),
+  /** Arquivo público e assinado que as estações já consultam. É o que o job de espelho lê. */
+  APP_MANIFEST_URL: z.url().default('https://salalivre.app/versao.json'),
+  APP_VERSION_PUBLISH_TOKEN: appVersionPublishTokenSchema,
+  APP_MANIFEST_PUBLIC_KEY: appManifestPublicKeySchema,
   ALLOW_DEFAULTING_LAWYERS: allowDefaultingLawyersSchema,
   API_PORT: z.coerce.number().default(25600),
   TRUST_PROXY: trustProxySchema,

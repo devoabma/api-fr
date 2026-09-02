@@ -35,6 +35,7 @@
   - [~] Eventos de negócio
     - [x] `session_closed` (`websocket/notifications.ts` — disparado por `close-session.ts` com `reason: manual` e pelo cron `auto-close-sessions` com `reason: expired`; leva `macCode` e `sessionId` para o Desktop conferir antes de fechar a tela)
     - [x] `session_started` (`websocket/notifications.ts` — disparado por `release-computer.ts` depois de gravar a sessão; é o que faz a liberação pelo painel destravar a máquina da sala, e o `notified` da resposta HTTP diz se a estação estava conectada)
+    - [x] `update_now` (`websocket/notifications.ts` — disparado por `POST /computers/update-app/:id`; a **primeira** mensagem do canal que pede uma ação em vez de avisar de um fato consumado. É um toque no ombro: não carrega URL, hash nem tamanho, então servidor comprometido não consegue apontar um executável para a estação baixar — o que ela instala vem do manifesto assinado que ela mesma busca e confere. Aqui o retorno do envio **importa**, porque nada foi gravado antes: `false` é "estação desconectada" para mostrar ao funcionário)
   - [x] Estações conectadas em HTTP (`GET /computers/online/:roomId?` — o registro em memória ganhou porta de saída, e o painel passa a barrar a liberação em máquina muda **antes** de gravar a sessão, em vez de descobrir pelo `notified`)
   - [ ] Snapshot no `register` (hoje quem estava offline não fica sabendo do que perdeu — a rede de segurança é o relógio do próprio Desktop)
 
@@ -91,7 +92,10 @@
 - [x] Cadastrar computador (`create.ts` — `POST /computers/create`; MAC normalizado/único, `number` e `description` únicos por sala)
 - [x] Editar computador (`update.ts` — `PATCH /computers/update/:id`; atualização parcial restrita a ADMIN, MAC normalizado/único e `number`/`description` únicos na sala efetiva)
 - [x] Excluir computador (`delete.ts` — `DELETE /computers/delete/:id`; restrito a ADMIN, recusa com `400` se em uso, remove histórico de sessões e impressões em cascata)
-- [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; devolve `createdAt` da máquina e a última versão do Desktop informada por ela (`appVersion` + `appVersionReportedAt`, para responder quantas estações ainda estão numa versão que se quer tirar de campo) e ordena por data de cadastro desc; paginação ainda pendente)
+- [~] Listar computadores (`get-all.ts` — `GET /computers/get-all`; filtros opcionais por sala e por descrição case-insensitive; devolve `createdAt` da máquina, a última versão do Desktop informada por ela (`appVersion` + `appVersionReportedAt`), o `isOnline` lido do mapa em memória do canal e o `updateStatus` calculado no servidor, além de `latestVersion` no topo da resposta; ordena por data de cadastro desc; paginação ainda pendente)
+  - O `updateStatus` tem **três** estados (`outdated`, `up-to-date`, `unknown`) e a conta é do servidor de propósito: comparar versão por texto é um erro que só aparece na décima publicação (`'1.0.10' < '1.0.9'` em ordem alfabética) e não pode ser reescrito em cada tela. `unknown` — nunca informou, informou algo ilegível, ou a API ainda não sabe a publicada — **jamais** vira `up-to-date`, porque confundir "não sei" com "está certo" é como uma máquina desatualizada some do radar
+- [x] Mandar uma estação atualizar agora (`update-app.ts` — `POST /computers/update-app/:id`; ADMIN-only, uma máquina por chamada, teto de 10 em 5 minutos **por máquina** porque cada disparo aceito manda a estação baixar ~60 MB. Recusa com `400` se em uso — nenhuma versão interrompe advogado(a) em atendimento — e também quem já está na versão publicada; **manutenção não bloqueia**, é o melhor momento para trocar o executável. `409` para estação fora do canal, sem enfileirar: a máquina desligada pega a versão sozinha na próxima partida. A resposta confirma o envio do recado, jamais a atualização — a prova é o `register` seguinte trazendo a versão nova)
+  - Caminho `/update-app/:id` e **não** `/update/:id`: o segundo já é o `PATCH` que edita o cadastro, e as duas na mesma URL separadas só pelo verbo fariam um `POST` distraído mandar uma estação baixar o pacote inteiro
 - [x] Colocar/retirar computador de manutenção (`put-into-maintenance.ts` — `PATCH /computers/maintenance/:id`; e `take-out-of-maintenance.ts` — `PATCH /computers/maintenance/:id/remove`; ADMIN em qualquer máquina e funcionário comum nas de suas salas; ao colocar recusa se já em manutenção ou em uso, ao retirar recusa se não estava em manutenção)
 - [x] Liberar computador manualmente (funcionário) — sem rota nova: o painel usa a mesma `POST /lawyers/release-computer` informando o `macCode` da máquina escolhida, e o evento `session_started` destrava a estação (o `notified` da resposta avisa quando o Desktop está offline)
 
@@ -155,3 +159,28 @@
   - Obs.: `releases-metrics` **não** é restrita a ADMIN — ela alimenta a tela de Métricas, que fica em
     "Operação" e recorta por sala vinculada, como `get-all-releases`. A regra acima vale para a tela de
     Relatórios da Administração, ainda por fazer.
+
+---
+
+## 7. Versão do Desktop (App)
+
+A pergunta "quais máquinas estão atrasadas" precisa de duas metades. A primeira já existia: `computers.appVersion`, que cada estação anuncia no `register`. Esta seção é a segunda — **qual versão deveria estar lá** — e o que se faz com a resposta.
+
+### Casos de uso (RF)
+- [x] Guardar as versões publicadas (`app_versions` — histórico, uma linha por versão, e não uma linha só sobrescrita: "quando a 1.0.8 saiu e com que notas" hoje só existe no terminal de quem publicou. A vigente é a última criada)
+- [x] Receber o aviso da publicação (`app-version/publish.ts` — `POST /app/version`; o `publicar.ps1` avisa no instante em que a versão sai. Token de serviço no `Authorization: Bearer`, **não** é login de funcionário; comparação em tempo constante sobre digests SHA-256. Parser de content type próprio e encapsulado, para ficar com o corpo **como texto** — o envelope vai ao banco byte a byte, porque reserializar reordena chaves e quebra a assinatura sem alterar um único dado)
+- [x] Espelhar o manifesto público (`jobs/mirror-app-version.cron.ts` — a cada 5 min com `noOverlap`, alinhado ao `max-age` do próprio arquivo; `If-None-Match` faz a esmagadora maioria das rodadas voltar `304` sem corpo. É a **rede de segurança** para o dia em que o aviso acima não chegar, não a fonte)
+- [x] Conferir a assinatura do manifesto na entrada (`utils/app-version.ts` — ECDSA P-256 sobre os bytes decodificados do `conteudo`; `APP_MANIFEST_PUBLIC_KEY` vazia desliga. É rede, não muralha: quem protege o parque é cada estação, com a chave embutida no próprio executável)
+- [x] Situação de cada estação diante da publicada (`updateStatus` em `GET /computers/get-all`)
+- [x] Mandar uma estação atualizar agora (ver seção 3)
+- [ ] `GET /app/version` — servir o envelope às estações direto da API (fase 2). O banco já guarda o manifesto byte a byte preparado para isso; hoje as estações continuam lendo o arquivo público
+- [ ] Disparo em lote ("atualize a Sala 3 inteira"). Hoje é o front repetindo a chamada — e o teto por máquina existe justamente para isso não travar
+
+### Regras de negócio (RN)
+- [x] **A ordem nunca é "quem escreveu por último"** (`save-published-version.ts`). O arquivo público tem `max-age=300`: publica-se a 1.0.9, o `POST` avisa, e minutos depois o espelho pergunta à CDN, que **ainda entrega a 1.0.8 do cache**. Sem guarda, o espelho rebaixaria a versão publicada, o painel voltaria a dizer que o parque está em dia, e cinco minutos depois tudo se consertaria sozinho — bug que aparece e some é bug que ninguém consegue reproduzir para reportar
+- [x] Empate de versão se desfaz por `geradoEm`, **nunca** por percentual: a onda sobe republicando o mesmo número (1.0.8 a 0%, 10%, 50%, 100%) e conter uma versão ruim é o mesmo movimento ao contrário, republicar com percentual **menor**. Uma regra por percentual bloquearia exatamente esse freio de mão. `geradoEm` vem de dentro do conteúdo assinado, então não é falsificável sem invalidar a assinatura
+- [x] Sem `geradoEm` comparável, o desempate vai para a origem (publicação vence, espelho perde) **e sai aviso no log** — é sinal de manifesto entrando fora do processo normal, e silencioso não haveria pista nenhuma
+- [x] Falha de leitura **nunca** vira "não há versão": timeout, `5xx` e DNS oscilando mantêm o valor conhecido. Apagar a publicada por oscilação de rede faria o painel anunciar o parque inteiro em dia
+- [x] Duas fontes, **uma** porta de entrada (`savePublishedVersion`): a regra de sobrescrita mora num lugar só, porque duplicada nas duas pontas divergiria na primeira correção
+- [x] Sem `APP_VERSION_PUBLISH_TOKEN` configurado a rota responde `503` e não atende ninguém — o contrário seria comparar segredo vazio com segredo vazio e aceitar qualquer manifesto. Token e chave **vazios ou em branco** valem como "não configurado", e não como erro de validação: o `.env.example` copiado não pode derrubar o boot
+- [x] A API **não assina** manifesto em hipótese alguma. A chave privada fica no cofre de quem publica; a pública já viaja dentro de todo executável instalado no parque e não é segredo

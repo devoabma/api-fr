@@ -85,6 +85,36 @@ type SessionClosedInput = {
   remainingTime: number
 }
 
+type UpdateNowInput = {
+  /** Já normalizado por `formattedCodeMac` — é a chave do mapa de conexões. */
+  macCode: string
+  /** Versão publicada, quando a API sabe qual é. Informativa: a estação não instala por causa dela. */
+  version?: string
+}
+
+/**
+ * Manda a estação consultar o manifesto agora.
+ *
+ * Diferente dos avisos de sessão, aqui o retorno **importa para quem chamou**: nada foi gravado no
+ * banco antes desta chamada, então `false` (estação fora do canal) é a resposta que o painel precisa
+ * mostrar ao funcionário — "estação desconectada" — em vez de dizer que mandou e não mandou.
+ *
+ * O que acontece depois não passa mais por aqui: a estação baixa, confere assinatura e SHA-256, roda
+ * o autoteste e reinicia. A prova de que deu certo é o `register` seguinte chegando com a versão
+ * nova — não existe um "deu certo" separado, porque quem aplica reinicia.
+ */
+export function notifyUpdateNow(input: UpdateNowInput): boolean {
+  return deliver(
+    input.macCode,
+    {
+      type: 'update_now',
+      macCode: input.macCode,
+      ...(input.version ? { version: input.version } : {}),
+    },
+    `Pedido de atualização${input.version ? ` para a versão ${input.version}` : ''}`
+  )
+}
+
 /** Avisa a estação de que a sessão terminou. */
 export function notifySessionClosed(input: SessionClosedInput): boolean {
   return deliver(

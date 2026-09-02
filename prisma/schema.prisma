@@ -184,3 +184,62 @@ model Printers {
 
   @@map("printers")
 }
+
+enum AppVersionOrigins {
+  /// Chegou pelo `POST /app/version`, no instante da publicação. É a fonte.
+  PUBLISHER
+  /// Chegou pelo job que espelha o arquivo público. É a rede de segurança.
+  MIRROR
+}
+
+/// Versões do Desktop que foram publicadas — a metade que faltava para o painel responder
+/// "quais máquinas estão atrasadas".
+///
+/// A outra metade já existe: `computers.appVersion`, que cada estação anuncia no `register`.
+///
+/// É histórico, e não uma linha só que se sobrescreve: uma linha por versão publicada responde de
+/// graça "quando a 1.0.8 saiu, com que notas", que hoje só existe no terminal de quem publicou. A
+/// **versão vigente** é a última criada — e é a guarda anti-regressão de `save-published-version.ts`
+/// que garante isso, recusando gravar uma versão mais velha que a que já está aqui.
+model AppVersions {
+  id String @id @default(cuid())
+
+  /// O número que o painel compara com o de cada estação. Texto, pelo mesmo motivo de
+  /// `computers.appVersion`: "1.0.10" não se ordena por comparação alfabética.
+  version String @unique @db.VarChar(40)
+
+  /// O envelope assinado **exatamente como chegou**, sem reserializar.
+  ///
+  /// Guardar objeto e remontar na saída reordena chaves e reindenta o JSON. A fase 2
+  /// (`GET /app/version`) devolve este campo byte a byte às estações, e a estação recusa em
+  /// silêncio o que não confere. Guarde texto, devolva texto.
+  envelope String
+
+  /// `geradoEm` de dentro do manifesto — quando a versão foi publicada, não quando a API soube.
+  /// Opcional porque o campo é do arquivo, e um manifesto sem ele ainda serve para comparar versão.
+  generatedAt DateTime? @map("generated_at")
+
+  /// `notas` do manifesto: texto em português, escrito para o funcionário ler no painel antes de
+  /// mandar atualizar. É o que o diálogo mostra em "o que muda nesta versão".
+  notes String?
+
+  /// `implantacao` do manifesto (`{ percentual, macs }`) — a onda que o publicador definiu.
+  ///
+  /// Guardado como veio, sem interpretar: enquanto a fase 2 não existir, quem filtra a onda é o
+  /// cliente, e a API só precisa saber exibir.
+  rollout Json?
+
+  /// Por qual das duas fontes esta linha chegou. Puro diagnóstico: "a publicação avisou, ou o
+  /// espelho é que descobriu?" — a pergunta que se faz quando o painel demora a mostrar a versão.
+  origin AppVersionOrigins
+
+  /// `ETag` da última leitura do arquivo público. É o que faz o job perguntar com `If-None-Match` e
+  /// receber `304` sem corpo na esmagadora maioria das rodadas.
+  etag String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt() @map("updated_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@map("app_versions")
+}
