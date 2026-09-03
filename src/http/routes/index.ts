@@ -9,6 +9,11 @@ import { putIntoMaintenanceComputer } from '../core/computers/put-into-maintenan
 import { takeOutOfMaintenanceComputer } from '../core/computers/take-out-of-maintenance'
 import { updateComputer } from '../core/computers/update'
 import { updateComputerApp } from '../core/computers/update-app'
+import { activateDownload } from '../core/downloads/activate'
+import { createDownload } from '../core/downloads/create'
+import { deactivateDownload } from '../core/downloads/deactivate'
+import { getAllDownloads } from '../core/downloads/get-all'
+import { updateDownload } from '../core/downloads/update'
 import { activateEmployee } from '../core/employees/activate'
 import { authenticate } from '../core/employees/authenticate'
 import { changePassword } from '../core/employees/change-password'
@@ -83,4 +88,11 @@ export async function appRoutes(app: FastifyInstance) {
   /* Printers (Impressões) */
   app.register(sendToPrint, { prefix: '/printers' })
   app.register(getAllPrinters, { prefix: '/printers' })
+
+  /* Downloads (Instalador e Desinstalador do Desktop) */
+  app.register(createDownload, { prefix: '/downloads' })
+  app.register(getAllDownloads, { prefix: '/downloads' })
+  app.register(updateDownload, { prefix: '/downloads' })
+  app.register(activateDownload, { prefix: '/downloads' })
+  app.register(deactivateDownload, { prefix: '/downloads' })
 }

@@ -184,3 +184,27 @@ A pergunta "quais máquinas estão atrasadas" precisa de duas metades. A primeir
 - [x] Duas fontes, **uma** porta de entrada (`savePublishedVersion`): a regra de sobrescrita mora num lugar só, porque duplicada nas duas pontas divergiria na primeira correção
 - [x] Sem `APP_VERSION_PUBLISH_TOKEN` configurado a rota responde `503` e não atende ninguém — o contrário seria comparar segredo vazio com segredo vazio e aceitar qualquer manifesto. Token e chave **vazios ou em branco** valem como "não configurado", e não como erro de validação: o `.env.example` copiado não pode derrubar o boot
 - [x] A API **não assina** manifesto em hipótese alguma. A chave privada fica no cofre de quem publica; a pública já viaja dentro de todo executável instalado no parque e não é segredo
+
+---
+
+## 8. Downloads (Instalador e Desinstalador)
+
+O Dev C# entrega dois links a cada versão — o instalador e o desinstalador do Desktop — e até aqui eles não tinham dono: circulavam por mensagem e eram colados à mão em algum ponto do front. Esta seção dá um lugar a eles, com o ADMIN editando no painel e o funcionário baixando na operação.
+
+### Casos de uso (RF)
+- [x] Guardar os links (`downloads` — catálogo com `kind`, e não uma linha só com duas colunas de URL: o dia em que entrar um manual em PDF ou um driver é uma linha nova, não uma migration de coluna)
+- [x] Cadastrar um arquivo (`downloads/create.ts` — `POST /downloads/create`, ADMIN. Recusa cadastrar um segundo ativo do mesmo tipo)
+- [x] Listar os arquivos (`downloads/get-all.ts` — `GET /downloads/get-all`. Rota única com recorte por papel: ADMIN recebe também os inativos, porque é a mesma tela que gerencia os links; MEMBER só recebe o que dá para baixar)
+- [x] Editar um arquivo (`downloads/update.ts` — `PATCH /downloads/update/:id`, ADMIN. `kind` fora do body de propósito)
+- [x] Inativar e reativar (`downloads/deactivate.ts` e `activate.ts` — `PATCH /downloads/deactivate/:id` e `/activate/:id`, ADMIN. Não há delete físico: o link antigo é o histórico)
+- [ ] Auditoria de quem trocou o link (`created_by`/`updated_by`). Apontar o instalador para o binário errado é incidente, e hoje o banco não sabe dizer quem mexeu — mas exige relação nova com `employees`
+- [ ] Contador de downloads. Só faz sentido com uma rota de redirect servindo o arquivo, que hoje não existe: a API devolve a URL crua e o arquivo vem da origem
+
+### Regras de negócio (RN)
+- [x] **Um ativo por tipo** (`helpers/ensure-single-active.ts`). Quem escolhe o link é o front, e ele escolhe pelo `kind`: com dois instaladores ativos ele pegaria o primeiro da lista e ninguém perceberia que o botão passou a apontar para o arquivo errado — erro que não avisa é o que ninguém consegue reproduzir para reportar. A regra vale no cadastro **e** na reativação, e mora num arquivo só pelo mesmo motivo de `savePublishedVersion`: duplicada nas duas pontas, divergiria na primeira correção feita só de um lado
+- [x] A garantia é de aplicação, não do banco. O `UNIQUE` parcial que valeria de verdade (`WHERE inactive IS NULL`) não é expressável no schema do Prisma, e criado só no SQL sumiria no primeiro `prisma migrate dev` de quem alterasse a tabela — passaria a valer em produção e não no banco de quem desenvolve. É uma tela de configuração usada por um punhado de pessoas, e o próprio `get-all` mostraria a duplicidade
+- [x] **URL só com protocolo `http`/`https`** (`utils/validations/download-url.ts`). Um `z.url()` solto aceita `javascript:alert(1)` e `file:///C:/...` como URLs perfeitamente válidas — e este campo termina dentro de um `href` que o funcionário clica no painel
+- [x] `kind` não é editável no update: trocar o tipo de um registro é, na prática, cadastrar outro, e permitir isso obrigaria a repetir a checagem de unicidade num terceiro lugar. Para mudar de tipo, inative este e cadastre o novo
+- [x] Inativar **não apaga**: o registro sai da lista do funcionário e continua no banco, respondendo "para onde o instalador apontava em agosto" no dia em que alguém reclamar de ter baixado um binário errado. É também o passo obrigatório antes de cadastrar outro do mesmo tipo
+- [x] A API guarda o endereço e devolve o endereço — não redireciona nem repassa o binário. Servir ~60 MB por download gastaria banda da API para entregar o que a origem já entrega
+- [x] O `400` das rotas usa `badRequestSchema`, e não um `{ message }` próprio: o serializador do Fastify **descarta** o que não está declarado no schema de resposta, e um `400` declarado à mão come o array `errors` do errorHandler — o front recebe "erro na validação" sem saber qual campo errou

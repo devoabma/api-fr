@@ -55,6 +55,16 @@ Employee (ADMIN) ──cadastra──▶ Rooms ──contém──▶ Computers
 > Campo de **diagnóstico**: responde "por onde esta versão chegou por último" quando alguém pergunta
 > por que o painel demorou a mostrar o número novo. Não participa de nenhuma regra de negócio.
 
+### `DownloadKinds` — o que o arquivo é
+| Valor         | Significado                                            |
+|---------------|--------------------------------------------------------|
+| `INSTALLER`   | O executável que instala o Sala Livre na estação.      |
+| `UNINSTALLER` | O executável que remove o Sala Livre da estação.       |
+
+> É por este campo que o front sabe qual link vai em cada botão — **não** pelo nome, que é texto
+> livre editável. Enum, e não texto: um `"INSTALADOR"` digitado errado não daria erro em lugar
+> nenhum, o botão só ficaria vazio. Vale a regra de **um ativo por tipo** (ver a tabela `downloads`).
+
 ---
 
 ## 🗂️ Modelos (Tabelas)
@@ -267,6 +277,34 @@ Tabela **sem relação com nenhuma outra**: ela descreve o parque como um todo, 
 2. **`version` é texto, e a ordenação por versão não é do banco.** `ORDER BY version` mentiria: `'1.0.10' < '1.0.7'` em comparação alfabética. A conta mora em `src/utils/app-version.ts`, por partes numéricas.
 3. **`envelope` é texto cru, e não `Json`.** A fase 2 (`GET /app/version`) devolve este campo byte a byte às estações, e a estação recusa em silêncio o envelope cuja assinatura não confere. Guardar objeto e remontar na saída reordena chaves e reindenta o JSON — ou seja, quebraria a assinatura sem alterar um único dado.
 
+### 10. `Downloads` → tabela `downloads`
+Os arquivos que o funcionário baixa do painel — hoje o instalador e o desinstalador do Desktop.
+
+Existe porque esse endereço não tinha dono: o Dev C# manda os dois links a cada versão e eles circulavam por mensagem, colados à mão em algum ponto do front. O erro que isso produz é o pior tipo — alguém distribui um executável velho e **nada na aplicação sabe dizer que está velho**.
+
+Tabela **sem relação com nenhuma outra**, como `app_versions`.
+
+| Campo         | Tipo          | Coluna (DB)  | Regras / Observações                                                              |
+|---------------|---------------|--------------|-----------------------------------------------------------------------------------|
+| `id`          | String        | `id`         | PK, CUID.                                                                          |
+| `kind`        | DownloadKinds | `kind`       | O que o arquivo é. **Um ativo por tipo** (regra de aplicação). Não editável no update. |
+| `name`        | String        | `name`       | `VarChar(80)`. O rótulo que aparece no botão, escrito para o funcionário ler.       |
+| `description` | String?       | `description`| Texto de apoio opcional ("instale com a máquina fora de uso").                      |
+| `url`         | String        | `url`        | Endereço direto do arquivo. Só `http`/`https`, validado na entrada.                 |
+| `version`     | String?       | `version`    | `VarChar(40)`. Texto, nunca numérico. Opcional: o desinstalador raramente é versionado. |
+| `inactive`    | DateTime?     | `inactive`   | Soft delete (nulo = ativo). Também é o histórico do link anterior.                  |
+| `createdAt`   | DateTime      | `created_at` | `@default(now())`.                                                                  |
+| `updatedAt`   | DateTime      | `updated_at` | `@updatedAt`.                                                                       |
+
+**Índice**: `(kind, inactive)` — as duas colunas que toda leitura filtra: o painel separando ativo de inativo, e a checagem de unicidade procurando o concorrente do mesmo tipo.
+
+**Quatro decisões que o modelo esconde**
+
+1. **É catálogo, e não uma linha só com duas colunas de URL.** O dia em que entrar um manual em PDF ou um driver de impressora é uma linha nova, não uma migration de coluna — e o painel que já sabe listar não muda.
+2. **Um ativo por tipo, garantido na aplicação e não no banco.** Quem escolhe o link é o front, e ele escolhe pelo `kind`: com dois instaladores ativos ele pegaria o primeiro da lista e ninguém perceberia que o botão passou a apontar para o arquivo errado. A garantia de verdade seria um `UNIQUE` parcial (`WHERE inactive IS NULL`), que o schema do Prisma não sabe expressar — criado só no SQL, ele sumiria no primeiro `prisma migrate dev` de quem alterasse a tabela, e a regra passaria a valer em produção mas não no banco de quem desenvolve. A regra mora em `src/http/core/downloads/helpers/ensure-single-active.ts`, num lugar só.
+3. **Sem relação com `app_versions`, de propósito.** Aquela tabela responde "qual versão **deveria** estar rodando"; esta responde "de **onde** se baixa o arquivo". Amarrar as duas obrigaria a publicar uma versão inteira só para consertar um link quebrado.
+4. **A API guarda o endereço e devolve o endereço.** Não redireciona nem repassa o binário: servir ~60 MB por download gastaria banda da API para entregar o que a origem já entrega. O efeito colateral é que não há contador de downloads — se algum dia ele for necessário, aí sim entra uma rota de redirect.
+
 ---
 
 ## 🔗 Mapa de Relacionamentos
@@ -283,6 +321,8 @@ Tabela **sem relação com nenhuma outra**: ela descreve o parque como um todo, 
 | Printers           | Computers           | N:1           | Cascade   |
 | Printers           | Lawyers             | N:1           | Cascade   |
 | Employees ⇄ Rooms  | via EmployeesRooms  | N:N           | Cascade   |
+| AppVersions        | —                   | isolada       | —         |
+| Downloads          | —                   | isolada       | —         |
 
 \* *Restrict* = comportamento padrão do Prisma quando `onDelete` não é declarado.
 

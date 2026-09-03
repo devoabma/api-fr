@@ -243,3 +243,42 @@ model AppVersions {
   @@index([createdAt(sort: Desc)])
   @@map("app_versions")
 }
+
+enum DownloadKinds {
+  INSTALLER
+  UNINSTALLER
+}
+
+
+model Downloads {
+  id String @id @default(cuid())
+
+  /// O que este arquivo é. É por aqui que o front sabe qual link vai em cada botão — não pelo nome,
+  /// que é texto livre editável. Vale a regra de **um ativo por tipo**, garantida em
+  /// `helpers/ensure-single-active.ts`: com dois instaladores ativos, o front não teria como
+  /// escolher, e escolheria em silêncio.
+  kind DownloadKinds
+
+  /// O rótulo que aparece no botão, escrito para o funcionário ler (ex.: "Sala Livre 1.0.12").
+  name String @db.VarChar(80)
+
+  /// Texto de apoio opcional — "instale com a máquina fora de uso", esse tipo de recado.
+  description String?
+
+
+  url String
+
+
+  version String? @db.VarChar(40)
+
+ 
+  inactive DateTime?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt() @map("updated_at")
+
+  /// Toda leitura filtra por estas duas colunas: a do painel para separar ativo de inativo, e a
+  /// checagem de unicidade para achar o concorrente do mesmo tipo.
+  @@index([kind, inactive])
+  @@map("downloads")
+}
